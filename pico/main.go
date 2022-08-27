@@ -6,6 +6,7 @@ import (
 	"machine"
 	"time"
 
+	"github.com/a-h/rotary"
 	picodoomsdaymessenger "github.com/headblockhead/picoDoomsdayMessenger"
 	"tinygo.org/x/drivers/ssd1306"
 )
@@ -45,9 +46,14 @@ func main() {
 	clk.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
 	dta.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
 	sw.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
+	encoder := rotary.NewEncoder()
+	lastCounter := encoder.Count
 
-	var clkNow, clkPrv bool
-
+	defer func() {
+		if err := recover(); err != nil {
+			flashLED(&led, 10)
+		}
+	}()
 	for {
 		// Update the display if the state changes
 		if oldMachineState != device.State {
@@ -65,13 +71,9 @@ func main() {
 		// Send a message to the device if an input is pressed
 
 		// If the rotary encoder is pressed
-		if !sw.Get() {
+		pressed := encoder.Update()
+		if pressed {
 			flashLED(&led, 1)
-			defer func() {
-				if err := recover(); err != nil {
-					flashLED(&led, 10)
-				}
-			}()
 			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
 			if err != nil {
 				flashLED(&led, 3)
@@ -79,28 +81,22 @@ func main() {
 			}
 			time.Sleep(time.Millisecond * 100)
 		}
-		// If the rotary encoder is turned
-		clkNow = clk.Get()
-		if (clkNow != clkPrv) && clkNow {
-			if dta.Get() {
-				flashLED(&led, 1)
-				// Anti-Clockwise
-				err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventLeft)
-				if err != nil {
-					flashLED(&led, 5)
-					return
-				}
-			} else {
-				flashLED(&led, 2)
-				// Clockwise
-				err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventRight)
-				if err != nil {
-					flashLED(&led, 4)
-					return
-				}
+		if encoder.Count > lastCounter {
+			flashLED(&led, 1)
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventRight)
+			if err != nil {
+				flashLED(&led, 5)
+				return
+			}
+		} else {
+			flashLED(&led, 2)
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventLeft)
+			if err != nil {
+				flashLED(&led, 4)
+				return
 			}
 		}
-		clkPrv = clkNow
+		lastCounter = encoder.Count
 		time.Sleep(time.Millisecond * 1)
 	}
 }
