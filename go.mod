@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/a-h/rotary v0.0.0-20220827181003-fecbd63f1e3d
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/rakyll/statik v0.1.7 // indirect
 )

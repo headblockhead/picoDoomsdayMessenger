@@ -178,6 +178,26 @@ func GetFrame(dimensions image.Rectangle, device *Device) (frame image.Image, er
 	return img, nil
 }
 
+func GetErrorFrame(dimensions image.Rectangle, device *Device, inputErr string) (frame image.Image, err error) {
+	img := image.NewRGBA(dimensions)
+	if len(inputErr) < 18 {
+		drawText(img, 0, 13, inputErr)
+	} else if len(inputErr) > 18 && len(inputErr) < 36 {
+		drawText(img, 0, 13, inputErr[:18])
+		drawText(img, 0, 26, inputErr[18:])
+	} else if len(inputErr) > 36 && len(inputErr) < 54 {
+		drawText(img, 0, 13, inputErr[:18])
+		drawText(img, 0, 26, inputErr[18:36])
+		drawText(img, 0, 39, inputErr[36:])
+	} else {
+		drawText(img, 0, 13, inputErr[:18])
+		drawText(img, 0, 26, inputErr[18:36])
+		drawText(img, 0, 39, inputErr[36:54])
+		drawText(img, 0, 52, inputErr[54:])
+	}
+	return img, nil
+}
+
 func drawText(img *image.RGBA, x, y int, text string) {
 	col := color.RGBA{255, 255, 255, 255}
 	point := fixed.Point26_6{fixed.I(x), fixed.I(y)}
