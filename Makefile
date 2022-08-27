@@ -1,4 +1,4 @@
 edit:
 	tinygo-edit --target pico --editor code
 run:
-	tinygo flash -target=pico
+	tinygo flash -target=pico pico/main.go
