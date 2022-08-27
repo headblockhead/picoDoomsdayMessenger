@@ -39,7 +39,7 @@ var (
 	ShutdownMenuItems      = []string{GlobalMenuItemGoBack, ShutdownMenuItemReally}
 )
 
-type Machine struct {
+type Device struct {
 	State           State
 	StateHistory    []State
 	MenuTitle       string
@@ -55,20 +55,20 @@ const (
 	InputEventFire  InputEvent = "fire"
 )
 
-func NewMachine() (machine *Machine) {
-	return &Machine{StateMenu, []State{}, MenuMenuTitle, MenuMenuItems, 0}
+func NewDevice() (device *Device) {
+	return &Device{StateMenu, []State{}, MenuMenuTitle, MenuMenuItems, 0}
 }
 
-func (m *Machine) ChangeState(newState State) {
+func (m *Device) ChangeState(newState State) {
 	m.StateHistory = append(m.StateHistory, newState)
 	m.State = newState
 }
 
-func (m *Machine) ChangeStateWithoutHistory(newState State) {
+func (m *Device) ChangeStateWithoutHistory(newState State) {
 	m.State = newState
 }
 
-func (m *Machine) GoBackState() (err error) {
+func (m *Device) GoBackState() (err error) {
 	if len(m.StateHistory)-1 < 0 {
 		return errors.New("already at root state")
 	}
@@ -76,7 +76,7 @@ func (m *Machine) GoBackState() (err error) {
 	return nil
 }
 
-func (m *Machine) ProcessInputEvent(event InputEvent) (err error) {
+func (m *Device) ProcessInputEvent(event InputEvent) (err error) {
 	switch m.State {
 	case StateMenu:
 		{
@@ -154,7 +154,7 @@ func (m *Machine) ProcessInputEvent(event InputEvent) (err error) {
 	return nil
 }
 
-func (m *Machine) checkMenuScroll(event InputEvent) {
+func (m *Device) checkMenuScroll(event InputEvent) {
 	if event == InputEventLeft {
 		if m.CurrentMenuItem > 0 {
 			m.CurrentMenuItem--
@@ -167,14 +167,14 @@ func (m *Machine) checkMenuScroll(event InputEvent) {
 	}
 }
 
-func GetFrame(dimensions image.Rectangle, machine *Machine) (frame image.Image, err error) {
+func GetFrame(dimensions image.Rectangle, device *Device) (frame image.Image, err error) {
 	img := image.NewRGBA(dimensions)
-	drawText(img, 0, 13, machine.MenuTitle)
+	drawText(img, 0, 13, device.MenuTitle)
 	drawHLine(img, 0, 15, dimensions.Dx())
-	for i := 0; i < len(machine.MenuItems); i++ {
-		drawText(img, 0, 26+(13*(i)), machine.MenuItems[i])
+	for i := 0; i < len(device.MenuItems); i++ {
+		drawText(img, 0, 26+(13*(i)), device.MenuItems[i])
 	}
-	drawCursor(img, dimensions.Dx()-4, 6+(13*(machine.CurrentMenuItem+1)))
+	drawCursor(img, dimensions.Dx()-4, 6+(13*(device.CurrentMenuItem+1)))
 	return img, nil
 }
 
