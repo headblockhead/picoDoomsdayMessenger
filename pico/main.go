@@ -7,7 +7,6 @@ import (
 	"machine"
 	"time"
 
-	"github.com/a-h/rotary"
 	picodoomsdaymessenger "github.com/headblockhead/picoDoomsdayMessenger"
 	"tinygo.org/x/drivers/ssd1306"
 )
@@ -34,7 +33,9 @@ func main() {
 
 	// Create a new Machine
 	device := picodoomsdaymessenger.NewDevice()
+	// Set the old machine state and old menu item to something that is not the starting value.
 	oldMachineState := picodoomsdaymessenger.StateSettings
+	oldDeviceMenuItem := 1
 
 	// Record the display size
 	displayx, displayy := display.Size()
@@ -46,28 +47,10 @@ func main() {
 	clk.Configure(machine.PinConfig{Mode: machine.PinInput})
 	dta.Configure(machine.PinConfig{Mode: machine.PinInput})
 	sw.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
-	getPin := func(p uint) bool {
-		// return machine.Pin(p).Get()
-		if p == uint(clk) {
-			return clk.Get()
-		}
-		if p == uint(dta) {
-			return dta.Get()
-		}
-		if p == uint(sw) {
-			return sw.Get()
-		}
-		return false
-	}
-	now := func() int64 {
-		return time.Now().Unix()
-	}
-	sleep := func(ms int) {
-		time.Sleep(time.Duration(ms) * time.Millisecond)
-	}
-	encoder := rotary.New(getPin, now, sleep, uint(clk), uint(dta), uint(sw))
-	lastCounter := encoder.Count
 
+	var clkNow, clkPrv bool
+
+	// Setup panic recovery
 	defer func() {
 		if err := recover(); err != nil {
 			// If there is a panic, try to print details to the screen.
@@ -83,9 +66,12 @@ func main() {
 			}
 		}
 	}()
+
 	for {
 		// Update the display if the state changes
-		if oldMachineState != device.State {
+		if oldMachineState != device.State || oldDeviceMenuItem != device.CurrentMenuItem {
+			oldMachineState = device.State
+			oldDeviceMenuItem = device.CurrentMenuItem
 			frame, err := picodoomsdaymessenger.GetFrame(image.Rect(0, 0, int(displayx), int(displayy)), device)
 			if err != nil {
 				// If there is a error, try to print details to the screen.
@@ -102,8 +88,7 @@ func main() {
 		// Send a message to the device if an input is pressed
 
 		// If the rotary encoder is pressed
-		pressed := encoder.Update()
-		if pressed {
+		if !sw.Get() {
 			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
 			if err != nil {
 				// If there is a error, try to print details to the screen.
@@ -112,22 +97,28 @@ func main() {
 			}
 			time.Sleep(time.Millisecond * 100)
 		}
-		if encoder.Count > lastCounter {
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventRight)
-			if err != nil {
-				// If there is a error, try to print details to the screen.
-				displayErrorFrame(&display, &led, device, err)
-				return
-			}
-		} else if encoder.Count < lastCounter {
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventLeft)
-			if err != nil {
-				// If there is a error, try to print details to the screen.
-				displayErrorFrame(&display, &led, device, err)
-				return
+		// If the rotary encoder is turned
+		clkNow = clk.Get()
+		if (clkNow != clkPrv) && clkNow {
+			if dta.Get() {
+				// Anti-Clockwise
+				err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventLeft)
+				if err != nil {
+					// If there is a error, try to print details to the screen.
+					displayErrorFrame(&display, &led, device, err)
+					return
+				}
+			} else {
+				// Clockwise
+				err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventRight)
+				if err != nil {
+					// If there is a error, try to print details to the screen.
+					displayErrorFrame(&display, &led, device, err)
+					return
+				}
 			}
 		}
-		lastCounter = encoder.Count
+		clkPrv = clkNow
 		time.Sleep(time.Millisecond * 1)
 	}
 }
