@@ -10,41 +10,20 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-type State string
-
-const (
-	StateMenu      State = "menu"
-	StatePeople    State = "people"
-	StateMessanges State = "messanges"
-	StateSettings  State = "settings"
-	StateShutdown  State = "shutdown"
-)
-
-var (
-	MenuMenuTitle          = "Main Menu"
-	MenuMenuItemMessages   = "Messages"
-	MenuMenuItemPeople     = "People"
-	MenuMenuItemSettings   = "Settings"
-	MenuMenuItemShutdown   = "Shutdown"
-	GlobalMenuItemGoBack   = "Go Back"
-	MenuMenuItems          = []string{MenuMenuItemMessages, MenuMenuItemPeople, MenuMenuItemSettings, MenuMenuItemShutdown}
-	MessagesMenuTitle      = "Messages"
-	MessagesMenuItems      = []string{GlobalMenuItemGoBack}
-	PeopleMenuTitle        = "People"
-	PeopleMenuItems        = []string{GlobalMenuItemGoBack}
-	SettingsMenuTitle      = "Settings"
-	SettingsMenuItems      = []string{GlobalMenuItemGoBack}
-	ShutdownMenuTitle      = "Are you sure?"
-	ShutdownMenuItemReally = "Yes, really."
-	ShutdownMenuItems      = []string{GlobalMenuItemGoBack, ShutdownMenuItemReally}
-)
-
+// Basic structure.
 type Device struct {
-	State           State
-	StateHistory    []State
-	MenuTitle       string
-	MenuItems       []string
-	CurrentMenuItem int
+	State        State
+	StateHistory []State
+}
+type State struct {
+	Title           string
+	Content         []MenuItem
+	HighlightedItem MenuItem
+}
+type MenuItem struct {
+	Name   string
+	Action func()
+	Index  int
 }
 
 type InputEvent string
@@ -55,131 +34,134 @@ const (
 	InputEventFire  InputEvent = "fire"
 )
 
-func NewDevice() (device *Device) {
-	return &Device{StateMenu, []State{}, MenuMenuTitle, MenuMenuItems, 0}
+// Define MenuItems
+var (
+	GlobalMenuItemUnknown MenuItem = MenuItem{
+		Name:   "contact the dev.",
+		Action: func() {},
+		Index:  0,
+	}
+	GlobalMenuItemGoBack MenuItem = MenuItem{
+		Name:   "Go Back",
+		Action: func() {},
+		Index:  0,
+	}
+	MainMenuItemMessages MenuItem = MenuItem{
+		Name:   "Messages",
+		Action: func() {},
+		Index:  0,
+	}
+	MainMenuItemPeople MenuItem = MenuItem{
+		Name:   "People",
+		Action: func() {},
+		Index:  1,
+	}
+	MainMenuItemSettings MenuItem = MenuItem{
+		Name:   "Settings",
+		Action: func() {},
+		Index:  2,
+	}
+	MainMenuItemSleep MenuItem = MenuItem{
+		Name:   "Sleep",
+		Action: func() {},
+		Index:  3,
+	}
+)
+
+// Define States
+var (
+	StateUnknown = State{
+		Title:           "If u can see this,",
+		Content:         []MenuItem{GlobalMenuItemUnknown},
+		HighlightedItem: GlobalMenuItemUnknown,
+	}
+	StateMainMenu = State{
+		Title:           "Main Menu",
+		Content:         []MenuItem{MainMenuItemMessages, MainMenuItemPeople, MainMenuItemSettings, MainMenuItemSleep},
+		HighlightedItem: MainMenuItemMessages,
+	}
+	StateMessagesMenu = State{
+		Title:           "Messages",
+		Content:         []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItem: GlobalMenuItemGoBack,
+	}
+	StatePeopleMenu = State{
+		Title:           "People",
+		Content:         []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItem: GlobalMenuItemGoBack,
+	}
+	StateSettingsMenu = State{
+		Title:           "Settings",
+		Content:         []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItem: GlobalMenuItemGoBack,
+	}
+)
+
+// NewDevice returns a new Device with default parameters.
+func NewDevice() (d *Device) {
+	newDevice := &Device{StateMainMenu, []State{}}
+	return newDevice
 }
 
-func (m *Device) ChangeState(newState State) {
-	m.StateHistory = append(m.StateHistory, newState)
-	m.State = newState
+// ChangeState will take in a State and update the Device while adding the State to the StateHistory.
+func (d *Device) ChangeStateWithHistory(newState State) {
+	d.StateHistory = append(d.StateHistory, newState)
+	d.ChangeState(newState)
 }
 
-func (m *Device) ChangeStateWithoutHistory(newState State) {
-	m.State = newState
+// ChangeState will take in a State and update the Device.
+func (d *Device) ChangeState(newState State) {
+	d.State = newState
 }
 
-func (m *Device) GoBackState() (err error) {
-	if len(m.StateHistory)-1 < 0 {
+// GoBackState will use the StateHistory to return to the upwards state in the tree.
+func (d *Device) GoBackState() (err error) {
+	if len(d.StateHistory)-1 < 0 {
 		return errors.New("already at root state")
 	}
-	m.ChangeStateWithoutHistory(m.StateHistory[len(m.StateHistory)-1])
+	d.ChangeState(d.StateHistory[len(d.StateHistory)-1])
 	return nil
 }
 
-func (m *Device) ProcessInputEvent(event InputEvent) (err error) {
-	switch m.State {
-	case StateMenu:
+// ProcessInputEvent will take in an InputEvent and run appropriate actions based on the event.
+func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
+	switch inputEvent {
+	case InputEventLeft:
 		{
-			m.checkMenuScroll(event)
-			if event == InputEventFire {
-				switch m.MenuItems[m.CurrentMenuItem] {
-				case MenuMenuItemMessages:
-					{
-						m.ChangeState(StateMessanges)
-					}
-				case MenuMenuItemPeople:
-					{
-						m.ChangeState(StatePeople)
-					}
-				case MenuMenuItemSettings:
-					{
-						m.ChangeState(StateSettings)
-					}
-				case MenuMenuItemShutdown:
-					{
-						m.ChangeState(StateShutdown)
-					}
-				}
+			if d.State.HighlightedItem.Index > 0 {
+				d.State.HighlightedItem = d.State.Content[d.State.HighlightedItem.Index-1]
 			}
 		}
-	case StateMessanges:
+	case InputEventRight:
 		{
-			m.checkMenuScroll(event)
-			if event == InputEventFire {
-				if m.MenuItems[m.CurrentMenuItem] == GlobalMenuItemGoBack {
-					err = m.GoBackState()
-					if err != nil {
-						return err
-					}
-				}
+			if d.State.HighlightedItem.Index < len(d.State.Content) {
+				d.State.HighlightedItem = d.State.Content[d.State.HighlightedItem.Index+1]
 			}
 		}
-	case StatePeople:
+	case InputEventFire:
 		{
-			m.checkMenuScroll(event)
-			if event == InputEventFire {
-				if m.MenuItems[m.CurrentMenuItem] == GlobalMenuItemGoBack {
-					err = m.GoBackState()
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	case StateSettings:
-		{
-			m.checkMenuScroll(event)
-			if event == InputEventFire {
-				if m.MenuItems[m.CurrentMenuItem] == GlobalMenuItemGoBack {
-					err = m.GoBackState()
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	case StateShutdown:
-		{
-			m.checkMenuScroll(event)
-			if event == InputEventFire {
-				if m.MenuItems[m.CurrentMenuItem] == GlobalMenuItemGoBack {
-					err = m.GoBackState()
-					if err != nil {
-						return err
-					}
-				}
-			}
+			d.State.HighlightedItem.Action()
 		}
 	}
 	return nil
 }
 
-func (m *Device) checkMenuScroll(event InputEvent) {
-	if event == InputEventLeft {
-		if m.CurrentMenuItem > 0 {
-			m.CurrentMenuItem--
-		}
-	}
-	if event == InputEventRight {
-		if m.CurrentMenuItem < len(m.MenuItems) {
-			m.CurrentMenuItem++
-		}
-	}
-}
-
-func GetFrame(dimensions image.Rectangle, device *Device) (frame image.Image, err error) {
+// GetFrame will take in a Device and return an image based on the state.
+func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err error) {
 	img := image.NewRGBA(dimensions)
-	drawText(img, 0, 13, device.MenuTitle)
+	drawText(img, 0, 13, d.State.Title)
 	drawHLine(img, 0, 15, dimensions.Dx())
-	for i := 0; i < len(device.MenuItems); i++ {
-		drawText(img, 0, 26+(13*(i)), device.MenuItems[i])
+	for i := 0; i < len(d.State.Content); i++ {
+		drawText(img, 0, 26+(13*(i)), d.State.Content[i].Name)
 	}
-	drawCursor(img, dimensions.Dx()-4, 6+(13*(device.CurrentMenuItem+1)))
+	drawCursor(img, dimensions.Dx()-4, 6+(13*(d.State.HighlightedItem.Index+1)))
 	return img, nil
 }
 
-func GetErrorFrame(dimensions image.Rectangle, device *Device, inputErr string) (frame image.Image, err error) {
+// GetErrorFrame will take in a string version of an error and return an image with that error in.
+func GetErrorFrame(dimensions image.Rectangle, d *Device, inputErr string) (frame image.Image, err error) {
 	img := image.NewRGBA(dimensions)
+	inputErr = "FATAL ERR: " + inputErr
 	if len(inputErr) < 18 {
 		drawText(img, 0, 13, inputErr)
 	} else if len(inputErr) > 18 && len(inputErr) < 36 {
@@ -198,6 +180,7 @@ func GetErrorFrame(dimensions image.Rectangle, device *Device, inputErr string) 
 	return img, nil
 }
 
+// drawText will write text in a 7x13 pixel font at a location.
 func drawText(img *image.RGBA, x, y int, text string) {
 	col := color.RGBA{255, 255, 255, 255}
 	point := fixed.Point26_6{fixed.I(x), fixed.I(y)}
@@ -211,6 +194,7 @@ func drawText(img *image.RGBA, x, y int, text string) {
 	d.DrawString(text)
 }
 
+// drawCursor will draw a small arrow. It is drawn based on the X and Y coordinates being at the top-left of the arrow.
 func drawCursor(img *image.RGBA, x int, y int) {
 	col := color.RGBA{255, 255, 255, 255}
 	img.Set(x+0, y+0, col)
@@ -222,6 +206,7 @@ func drawCursor(img *image.RGBA, x int, y int) {
 	img.Set(x+0, y+6, col)
 }
 
+// drawHLine draws a horizontal line from one X location to another. x2 has to be greater than x1.
 func drawHLine(img *image.RGBA, x1 int, y int, x2 int) {
 	col := color.RGBA{255, 255, 255, 255}
 	for ; x1 <= x2; x1++ {
@@ -229,6 +214,7 @@ func drawHLine(img *image.RGBA, x1 int, y int, x2 int) {
 	}
 }
 
+// drawVLine draws a verticle line from one Y location to another. y2 has to be greater than y1.
 func drawVLine(img *image.RGBA, y1 int, x int, y2 int) {
 	col := color.RGBA{255, 255, 255, 255}
 	for ; y1 <= y2; y1++ {

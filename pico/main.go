@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"machine"
+	"reflect"
 	"time"
 
 	picodoomsdaymessenger "github.com/headblockhead/picoDoomsdayMessenger"
@@ -34,34 +35,39 @@ func main() {
 	// Create a new Machine
 	device := picodoomsdaymessenger.NewDevice()
 	// Set the old machine state and old menu item to something that is not the starting value.
-	oldMachineState := picodoomsdaymessenger.StateSettings
-	oldDeviceMenuItem := 1
+	oldDeviceState := picodoomsdaymessenger.StateUnknown
+	oldDeviceHighlightedItem := picodoomsdaymessenger.GlobalMenuItemUnknown
 
 	// Record the display size
 	displayx, displayy := display.Size()
 
 	// Setup input reading
-	clk := machine.GP4
-	dta := machine.GP3
-	sw := machine.GP2
-	clk.Configure(machine.PinConfig{Mode: machine.PinInput})
-	dta.Configure(machine.PinConfig{Mode: machine.PinInput})
-	sw.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
+	rotaryEncoderClock := machine.GP4
+	rotaryEncoderData := machine.GP3
+	rotaryEncoderSwitch := machine.GP2
+	rotaryEncoderClock.Configure(machine.PinConfig{Mode: machine.PinInput})
+	rotaryEncoderData.Configure(machine.PinConfig{Mode: machine.PinInput})
+	rotaryEncoderSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
 
-	var clkNow, clkPrv bool
+	var rotaryEncoderSwitchStatus, oldRotaryEncoderSwitchStatus bool
 
-	// Setup panic recovery
+	// Panic recovery
 	defer func() {
 		if err := recover(); err != nil {
+			// Communicate that an error happened.
+			flashLED(&led, 1, 300)
 			// If there is a panic, try to print details to the screen.
+			// The handleError() function cannot be used here as it requires an error.
+			// err in this case is not an error but an interface.
+			// So we use fmt.Sprintf("%v", err) to write details to the screen.
 			frame, newErr := picodoomsdaymessenger.GetErrorFrame(image.Rect(0, 0, int(displayx), int(displayy)), device, fmt.Sprintf("%v", err))
 			if newErr != nil {
-				flashLED(&led, 1)
+				flashLED(&led, 2, 300)
 				return
 			}
 			newErr = displayImage(&display, frame)
 			if newErr != nil {
-				flashLED(&led, 2)
+				flashLED(&led, 2, 300)
 				return
 			}
 		}
@@ -69,82 +75,89 @@ func main() {
 
 	for {
 		// Update the display if the state changes
-		if oldMachineState != device.State || oldDeviceMenuItem != device.CurrentMenuItem {
-			oldMachineState = device.State
-			oldDeviceMenuItem = device.CurrentMenuItem
+		if true || !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
+			oldDeviceState = device.State
+			oldDeviceHighlightedItem = device.State.HighlightedItem
 			frame, err := picodoomsdaymessenger.GetFrame(image.Rect(0, 0, int(displayx), int(displayy)), device)
 			if err != nil {
-				// If there is a error, try to print details to the screen.
-				displayErrorFrame(&display, &led, device, err)
+				handleError(&display, &led, device, err)
 				return
 			}
 			err = displayImage(&display, frame)
 			if err != nil {
-				// If there is a error, try to print details to the screen.
-				displayErrorFrame(&display, &led, device, err)
+				handleError(&display, &led, device, err)
 				return
 			}
 		}
-		// Send a message to the device if an input is pressed
+		// Send a message to the device if an input is triggered.
 
-		// If the rotary encoder is pressed
-		if !sw.Get() {
+		// Rotary encoder checking
+
+		if !rotaryEncoderSwitch.Get() {
+			// Rotary encoder was pressed in.
 			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
 			if err != nil {
-				// If there is a error, try to print details to the screen.
-				displayErrorFrame(&display, &led, device, err)
+				handleError(&display, &led, device, err)
 				return
 			}
+			// Wait before checking again to make sure we don't take in multiple clicks.
 			time.Sleep(time.Millisecond * 100)
 		}
-		// If the rotary encoder is turned
-		clkNow = clk.Get()
-		if (clkNow != clkPrv) && clkNow {
-			if dta.Get() {
+		rotaryEncoderSwitchStatus = rotaryEncoderClock.Get()
+		if (rotaryEncoderSwitchStatus != oldRotaryEncoderSwitchStatus) && rotaryEncoderSwitchStatus {
+			// Rotary encoder was turned.
+			if rotaryEncoderData.Get() {
 				// Anti-Clockwise
 				err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventLeft)
 				if err != nil {
-					// If there is a error, try to print details to the screen.
-					displayErrorFrame(&display, &led, device, err)
+					handleError(&display, &led, device, err)
 					return
 				}
 			} else {
 				// Clockwise
 				err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventRight)
 				if err != nil {
-					// If there is a error, try to print details to the screen.
-					displayErrorFrame(&display, &led, device, err)
+					handleError(&display, &led, device, err)
 					return
 				}
 			}
 		}
-		clkPrv = clkNow
+		oldRotaryEncoderSwitchStatus = rotaryEncoderSwitchStatus
 		time.Sleep(time.Millisecond * 1)
 	}
 }
 
-func displayErrorFrame(display *ssd1306.Device, led *machine.Pin, device *picodoomsdaymessenger.Device, inputerr error) (err error) {
+// handleError takes in an error and communicates it to the user.
+func handleError(display *ssd1306.Device, led *machine.Pin, device *picodoomsdaymessenger.Device, inputerr error) {
+	// Communicate that an error happened.
+	flashLED(led, 1, 300)
+	// Try to get details to print to the screen
 	displayx, displayy := display.Size()
 	frame, newErr := picodoomsdaymessenger.GetErrorFrame(image.Rect(0, 0, int(displayx), int(displayy)), device, inputerr.Error())
 	if newErr != nil {
-		flashLED(led, 1)
+		// If we can't do that, resort to signaling with the LED
+		flashLED(led, 2, 300)
 		return
 	}
+	// Try to print the details to the screen
 	newErr = displayImage(display, frame)
 	if newErr != nil {
-		flashLED(led, 2)
+		// If we can't do that either, resort to signaling with the LED
+		flashLED(led, 2, 300)
 		return
 	}
-	return nil
 }
 
+// displayImage takes in an image and writes it to the screen.
 func displayImage(display *ssd1306.Device, img image.Image) (err error) {
+	// Put the image into the buffer.
 	for y := 0; y < img.Bounds().Dy(); y++ {
 		for x := 0; x < img.Bounds().Dx(); x++ {
 			r, g, b, a := img.At(x, y).RGBA()
 			display.SetPixel(int16(x), int16(y), color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
 		}
 	}
+	// Show the buffer.
 	err = display.Display()
 	if err != nil {
 		return err
@@ -152,11 +165,12 @@ func displayImage(display *ssd1306.Device, img image.Image) (err error) {
 	return nil
 }
 
-func flashLED(led *machine.Pin, count int) {
+// flashLED will toggle an LED a certain amount of times and will wait a certain amount of time between toggles.
+func flashLED(led *machine.Pin, count int, delay time.Duration) {
 	for i := 0; i < count; i++ {
 		led.High()
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(delay * time.Millisecond)
 		led.Low()
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(delay * time.Millisecond)
 	}
 }
