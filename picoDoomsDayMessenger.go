@@ -134,7 +134,7 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 		}
 	case InputEventRight:
 		{
-			if d.State.HighlightedItem.Index < len(d.State.Content) {
+			if d.State.HighlightedItem.Index < len(d.State.Content)-1 {
 				d.State.HighlightedItem = d.State.Content[d.State.HighlightedItem.Index+1]
 			}
 		}

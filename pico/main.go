@@ -42,10 +42,10 @@ func main() {
 	displayx, displayy := display.Size()
 
 	// Setup input reading
-	rotaryEncoderClock := machine.GP4
+	rotaryEncoderClick := machine.GP4
 	rotaryEncoderData := machine.GP3
 	rotaryEncoderSwitch := machine.GP2
-	rotaryEncoderClock.Configure(machine.PinConfig{Mode: machine.PinInput})
+	rotaryEncoderClick.Configure(machine.PinConfig{Mode: machine.PinInput})
 	rotaryEncoderData.Configure(machine.PinConfig{Mode: machine.PinInput})
 	rotaryEncoderSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
 
@@ -75,7 +75,7 @@ func main() {
 
 	for {
 		// Update the display if the state changes
-		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
+		if true || !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = device.State
 			oldDeviceHighlightedItem = device.State.HighlightedItem
 			frame, err := picodoomsdaymessenger.GetFrame(image.Rect(0, 0, int(displayx), int(displayy)), device)
@@ -103,7 +103,7 @@ func main() {
 			// Wait before checking again to make sure we don't take in multiple clicks.
 			time.Sleep(time.Millisecond * 100)
 		}
-		rotaryEncoderSwitchStatus = rotaryEncoderClock.Get()
+		rotaryEncoderSwitchStatus = rotaryEncoderClick.Get()
 		if (rotaryEncoderSwitchStatus != oldRotaryEncoderSwitchStatus) && rotaryEncoderSwitchStatus {
 			// Rotary encoder was turned.
 			if rotaryEncoderData.Get() {
