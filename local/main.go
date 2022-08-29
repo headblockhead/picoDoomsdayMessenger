@@ -34,29 +34,18 @@ func run() {
 	// Record the display size
 	displayx, displayy := 128, 64
 	// Set the old machine state and old menu item to something that is not the starting value.
-	oldDeviceState := picodoomsdaymessenger.StateUnknown
-	oldDeviceHighlightedItem := picodoomsdaymessenger.GlobalMenuItemUnknown
+	oldDeviceState := picodoomsdaymessenger.StateDefault
+	oldDeviceHighlightedItem := picodoomsdaymessenger.GlobalMenuItemDefault
 
 	// Panic recovery
 	defer func() {
 		if err := recover(); err != nil {
-			// If there is a panic, try to print details to the screen.
-			// The handleError() function cannot be used here as it requires an error.
-			// err in this case is not an error but an interface.
-			// So we use fmt.Sprintf("%v", err) to write details to the screen.
-			frame, newErr := picodoomsdaymessenger.GetErrorFrame(image.Rect(0, 0, int(displayx), int(displayy)), device, fmt.Sprintf("%v", err))
-			if newErr != nil {
-				return
-			}
-			newErr = displayImage(win, frame)
-			if newErr != nil {
-				return
-			}
+			fmt.Println(err)
 		}
 	}()
 
 	for !win.Closed() {
-		// Update the display if the state changes
+		// Update the display only if the state changes
 		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = device.State
 			oldDeviceHighlightedItem = device.State.HighlightedItem
@@ -71,10 +60,8 @@ func run() {
 				return
 			}
 		}
-		// Send a message to the device if an input is triggered.
 
-		// Rotary encoder checking
-		// If the rotary encoder is turned
+		// Key input checking
 		if win.JustPressed(pixelgl.KeyUp) {
 			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
 			if err != nil {
@@ -85,18 +72,16 @@ func run() {
 			time.Sleep(time.Millisecond * 100)
 		}
 		if win.JustPressed(pixelgl.KeyLeft) {
-			// Anti-Clockwise
+			// Anti-Clockwise (left)
 			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventLeft)
 			if err != nil {
-				// If there is a error, try to print details to the screen.
 				handleError(win, device, err)
 				return
 			}
 		} else if win.JustPressed(pixelgl.KeyRight) {
-			// Clockwise
+			// Clockwise (right)
 			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventRight)
 			if err != nil {
-				// If there is a error, try to print details to the screen.
 				handleError(win, device, err)
 				return
 			}
@@ -140,19 +125,7 @@ func displayImage(win *pixelgl.Window, img image.Image) (err error) {
 
 // handleError takes in an error and communicates it to the user.
 func handleError(win *pixelgl.Window, device *picodoomsdaymessenger.Device, inputerr error) {
-	// Try to get details to print to the screen
-	displayx, displayy := 128, 64
-	frame, newErr := picodoomsdaymessenger.GetErrorFrame(image.Rect(0, 0, int(displayx), int(displayy)), device, inputerr.Error())
-	if newErr != nil {
-		// If we can't do that, resort to signaling with the LED
-		return
-	}
-	// Try to print the details to the screen
-	newErr = displayImage(win, frame)
-	if newErr != nil {
-		// If we can't do that either, resort to signaling with the LED
-		return
-	}
+	fmt.Println(inputerr)
 }
 
 func main() {

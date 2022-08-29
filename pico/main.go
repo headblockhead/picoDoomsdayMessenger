@@ -35,8 +35,8 @@ func main() {
 	// Create a new Machine
 	device := picodoomsdaymessenger.NewDevice()
 	// Set the old machine state and old menu item to something that is not the starting value.
-	oldDeviceState := picodoomsdaymessenger.StateUnknown
-	oldDeviceHighlightedItem := picodoomsdaymessenger.GlobalMenuItemUnknown
+	oldDeviceState := picodoomsdaymessenger.StateDefault
+	oldDeviceHighlightedItem := picodoomsdaymessenger.GlobalMenuItemDefault
 
 	// Record the display size
 	displayx, displayy := display.Size()
@@ -75,7 +75,7 @@ func main() {
 
 	for {
 		// Update the display if the state changes
-		if true || !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
+		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = device.State
 			oldDeviceHighlightedItem = device.State.HighlightedItem
 			frame, err := picodoomsdaymessenger.GetFrame(image.Rect(0, 0, int(displayx), int(displayy)), device)
@@ -89,10 +89,8 @@ func main() {
 				return
 			}
 		}
-		// Send a message to the device if an input is triggered.
 
 		// Rotary encoder checking
-
 		if !rotaryEncoderSwitch.Get() {
 			// Rotary encoder was pressed in.
 			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
