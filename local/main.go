@@ -47,7 +47,7 @@ func run() {
 	for !win.Closed() {
 		// Update the display only if the state changes
 		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
-			oldDeviceState = device.State
+			oldDeviceState = *device.State
 			oldDeviceHighlightedItem = device.State.HighlightedItem
 			frame, err := picodoomsdaymessenger.GetFrame(image.Rect(0, 0, int(displayx), int(displayy)), device)
 			if err != nil {

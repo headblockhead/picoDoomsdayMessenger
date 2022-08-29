@@ -12,8 +12,8 @@ import (
 
 // Basic structure.
 type Device struct {
-	State        State
-	StateHistory []State
+	State        *State
+	StateHistory []*State
 }
 type State struct {
 	Title           string
@@ -58,7 +58,7 @@ var (
 	MainMenuItemMessages MenuItem = MenuItem{
 		Name: "Messages",
 		Action: func(d *Device) (err error) {
-			d.ChangeStateWithHistory(StateMessagesMenu)
+			d.ChangeStateWithHistory(&StateMessagesMenu)
 			if err != nil {
 				return err
 			}
@@ -69,7 +69,7 @@ var (
 	MainMenuItemPeople MenuItem = MenuItem{
 		Name: "People",
 		Action: func(d *Device) (err error) {
-			d.ChangeStateWithHistory(StatePeopleMenu)
+			d.ChangeStateWithHistory(&StatePeopleMenu)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ var (
 	MainMenuItemSettings MenuItem = MenuItem{
 		Name: "Settings",
 		Action: func(d *Device) (err error) {
-			d.ChangeStateWithHistory(StateSettingsMenu)
+			d.ChangeStateWithHistory(&StateSettingsMenu)
 			if err != nil {
 				return err
 			}
@@ -128,12 +128,12 @@ var (
 
 // NewDevice returns a new Device with default parameters.
 func NewDevice() (d *Device) {
-	newDevice := &Device{StateMainMenu, []State{StateMainMenu}}
+	newDevice := &Device{&StateMainMenu, []*State{&StateMainMenu}}
 	return newDevice
 }
 
 // ChangeStateWithHistory will take in a State and update the Device while adding the State to the StateHistory.
-func (d *Device) ChangeStateWithHistory(newState State) (err error) {
+func (d *Device) ChangeStateWithHistory(newState *State) (err error) {
 	d.StateHistory = append(d.StateHistory, newState)
 	err = d.ChangeStateWithoutHistory(newState)
 	if err != nil {
@@ -143,7 +143,7 @@ func (d *Device) ChangeStateWithHistory(newState State) (err error) {
 }
 
 // ChangeStateWithoutHistory will take in a State and update the Device.
-func (d *Device) ChangeStateWithoutHistory(newState State) (err error) {
+func (d *Device) ChangeStateWithoutHistory(newState *State) (err error) {
 	d.State = newState
 	if d.State.LoadAction != nil {
 		err = d.State.LoadAction(d)
@@ -163,7 +163,7 @@ func (d *Device) GoBackState() (err error) {
 	if err != nil {
 		return err
 	}
-	d.StateHistory = d.StateHistory[0 : len(d.StateHistory)-2]
+	d.StateHistory = d.StateHistory[0 : len(d.StateHistory)-1]
 	return nil
 }
 
