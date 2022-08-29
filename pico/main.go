@@ -99,7 +99,7 @@ func main() {
 				return
 			}
 			// Wait before checking again to make sure we don't take in multiple clicks.
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 250)
 		}
 		rotaryEncoderSwitchStatus = rotaryEncoderClick.Get()
 		if (rotaryEncoderSwitchStatus != oldRotaryEncoderSwitchStatus) && rotaryEncoderSwitchStatus {

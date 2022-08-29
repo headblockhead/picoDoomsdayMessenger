@@ -69,7 +69,7 @@ func run() {
 				return
 			}
 			// Wait before checking again to make sure we don't take in multiple clicks.
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 250)
 		}
 		if win.JustPressed(pixelgl.KeyLeft) {
 			// Anti-Clockwise (left)
