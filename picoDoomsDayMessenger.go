@@ -30,9 +30,9 @@ type MenuItem struct {
 type InputEvent string
 
 const (
-	InputEventLeft  InputEvent = "left"
-	InputEventRight InputEvent = "right"
-	InputEventFire  InputEvent = "fire"
+	InputEventUp   InputEvent = "left"
+	InputEventDown InputEvent = "right"
+	InputEventFire InputEvent = "fire"
 )
 
 // Define MenuItems
@@ -170,13 +170,13 @@ func (d *Device) GoBackState() (err error) {
 // ProcessInputEvent will take in an InputEvent and run appropriate actions based on the event.
 func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 	switch inputEvent {
-	case InputEventLeft:
+	case InputEventUp:
 		{
 			if d.State.HighlightedItem.Index > 0 {
 				d.State.HighlightedItem = d.State.Content[d.State.HighlightedItem.Index-1]
 			}
 		}
-	case InputEventRight:
+	case InputEventDown:
 		{
 			if d.State.HighlightedItem.Index < len(d.State.Content)-1 {
 				d.State.HighlightedItem = d.State.Content[d.State.HighlightedItem.Index+1]

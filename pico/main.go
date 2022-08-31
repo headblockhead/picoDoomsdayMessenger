@@ -42,14 +42,12 @@ func main() {
 	displayx, displayy := display.Size()
 
 	// Setup input reading
-	rotaryEncoderClick := machine.GP4
-	rotaryEncoderData := machine.GP3
-	rotaryEncoderSwitch := machine.GP2
-	rotaryEncoderClick.Configure(machine.PinConfig{Mode: machine.PinInput})
-	rotaryEncoderData.Configure(machine.PinConfig{Mode: machine.PinInput})
-	rotaryEncoderSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
-
-	var rotaryEncoderSwitchStatus, oldRotaryEncoderSwitchStatus bool
+	controlUpSwitch := machine.GP4
+	controlDownSwitch := machine.GP3
+	controlConfirmSwitch := machine.GP2
+	controlUpSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
+	controlDownSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
+	controlConfirmSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
 
 	// Panic recovery
 	defer func() {
@@ -74,6 +72,30 @@ func main() {
 	}()
 
 	for {
+		if !controlConfirmSwitch.Get() {
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
+			if err != nil {
+				handleError(&display, &led, device, err)
+				return
+			}
+			time.Sleep(time.Millisecond * 250)
+		}
+		if !controlUpSwitch.Get() {
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventUp)
+			if err != nil {
+				handleError(&display, &led, device, err)
+				return
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+		if !controlDownSwitch.Get() {
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventDown)
+			if err != nil {
+				handleError(&display, &led, device, err)
+				return
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
 		// Update the display if the state changes
 		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = *device.State
@@ -89,38 +111,6 @@ func main() {
 				return
 			}
 		}
-
-		// Rotary encoder checking
-		if !rotaryEncoderSwitch.Get() {
-			// Rotary encoder was pressed in.
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
-			if err != nil {
-				handleError(&display, &led, device, err)
-				return
-			}
-			// Wait before checking again to make sure we don't take in multiple clicks.
-			time.Sleep(time.Millisecond * 250)
-		}
-		rotaryEncoderSwitchStatus = rotaryEncoderClick.Get()
-		if (rotaryEncoderSwitchStatus != oldRotaryEncoderSwitchStatus) && rotaryEncoderSwitchStatus {
-			// Rotary encoder was turned.
-			if rotaryEncoderData.Get() {
-				// Anti-Clockwise
-				err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventLeft)
-				if err != nil {
-					handleError(&display, &led, device, err)
-					return
-				}
-			} else {
-				// Clockwise
-				err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventRight)
-				if err != nil {
-					handleError(&display, &led, device, err)
-					return
-				}
-			}
-		}
-		oldRotaryEncoderSwitchStatus = rotaryEncoderSwitchStatus
 		time.Sleep(time.Millisecond * 1)
 	}
 }

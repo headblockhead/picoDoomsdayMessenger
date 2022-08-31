@@ -45,6 +45,31 @@ func run() {
 	}()
 
 	for !win.Closed() {
+		if win.JustPressed(pixelgl.KeySpace) {
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
+			if err != nil {
+				handleError(win, device, err)
+				return
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+		if win.JustPressed(pixelgl.KeyUp) {
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventUp)
+			if err != nil {
+				handleError(win, device, err)
+				return
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+		if win.JustPressed(pixelgl.KeyDown) {
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventDown)
+			if err != nil {
+				handleError(win, device, err)
+				return
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+		time.Sleep(time.Millisecond * 1)
 		// Update the display only if the state changes
 		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = *device.State
@@ -55,32 +80,6 @@ func run() {
 				return
 			}
 			err = displayImage(win, frame)
-			if err != nil {
-				handleError(win, device, err)
-				return
-			}
-		}
-
-		// Key input checking
-		if win.JustPressed(pixelgl.KeyUp) {
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
-			if err != nil {
-				handleError(win, device, err)
-				return
-			}
-			// Wait before checking again to make sure we don't take in multiple clicks.
-			time.Sleep(time.Millisecond * 250)
-		}
-		if win.JustPressed(pixelgl.KeyLeft) {
-			// Anti-Clockwise (left)
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventLeft)
-			if err != nil {
-				handleError(win, device, err)
-				return
-			}
-		} else if win.JustPressed(pixelgl.KeyRight) {
-			// Clockwise (right)
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventRight)
 			if err != nil {
 				handleError(win, device, err)
 				return
