@@ -46,7 +46,7 @@ func run() {
 
 	for !win.Closed() {
 		if win.JustPressed(pixelgl.KeySpace) {
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventAccept)
 			if err != nil {
 				handleError(win, device, err)
 				return

@@ -73,7 +73,7 @@ func main() {
 
 	for {
 		if !controlConfirmSwitch.Get() {
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventFire)
+			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventAccept)
 			if err != nil {
 				handleError(&display, &led, device, err)
 				return

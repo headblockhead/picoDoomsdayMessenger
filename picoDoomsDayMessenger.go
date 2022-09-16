@@ -27,14 +27,6 @@ type MenuItem struct {
 	Index  int
 }
 
-type InputEvent string
-
-const (
-	InputEventUp   InputEvent = "left"
-	InputEventDown InputEvent = "right"
-	InputEventFire InputEvent = "fire"
-)
-
 // Define MenuItems
 var (
 	GlobalMenuItemDefault MenuItem = MenuItem{
@@ -167,6 +159,24 @@ func (d *Device) GoBackState() (err error) {
 	return nil
 }
 
+type InputEvent string
+
+const (
+	InputEventUp           InputEvent = "up"
+	InputEventDown         InputEvent = "down"
+	InputEventLeft         InputEvent = "left"
+	InputEventRight        InputEvent = "right"
+	InputEventAccept       InputEvent = "accept"
+	InputEventFunction1    InputEvent = "function1"
+	InputEventFunction2    InputEvent = "function2"
+	InputEventFunction3    InputEvent = "function3"
+	InputEventFunction4    InputEvent = "function4"
+	InputEventOpenSettings InputEvent = "openSettings"
+	InputEventOpenPeople   InputEvent = "openPeople"
+	InputEventOpenMessages InputEvent = "openMessages"
+	InputEventOpenMainMenu InputEvent = "openMainMenu"
+)
+
 // ProcessInputEvent will take in an InputEvent and run appropriate actions based on the event.
 func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 	switch inputEvent {
@@ -182,9 +192,53 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 				d.State.HighlightedItem = d.State.Content[d.State.HighlightedItem.Index+1]
 			}
 		}
-	case InputEventFire:
+	case InputEventLeft:
+		{
+
+		}
+	case InputEventRight:
+		{
+
+		}
+	case InputEventAccept:
 		{
 			err = d.State.HighlightedItem.Action(d)
+			return err
+		}
+	case InputEventFunction1:
+		{
+
+		}
+	case InputEventFunction2:
+		{
+
+		}
+	case InputEventFunction3:
+		{
+
+		}
+	case InputEventFunction4:
+		{
+
+		}
+	case InputEventOpenSettings:
+		{
+			err = d.ChangeStateWithHistory(&StateSettingsMenu)
+			return err
+		}
+	case InputEventOpenPeople:
+		{
+			err = d.ChangeStateWithHistory(&StatePeopleMenu)
+			return err
+		}
+	case InputEventOpenMessages:
+		{
+			err = d.ChangeStateWithHistory(&StateMessagesMenu)
+			return err
+		}
+	case InputEventOpenMainMenu:
+		{
+			err = d.ChangeStateWithHistory(&StateMainMenu)
 			return err
 		}
 	}
