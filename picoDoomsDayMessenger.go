@@ -175,6 +175,18 @@ const (
 	InputEventOpenPeople   InputEvent = "openPeople"
 	InputEventOpenMessages InputEvent = "openMessages"
 	InputEventOpenMainMenu InputEvent = "openMainMenu"
+	InputEventNumber1      InputEvent = "number1"
+	InputEventNumber2      InputEvent = "number2"
+	InputEventNumber3      InputEvent = "number3"
+	InputEventNumber4      InputEvent = "number4"
+	InputEventNumber5      InputEvent = "number5"
+	InputEventNumber6      InputEvent = "number6"
+	InputEventNumber7      InputEvent = "number7"
+	InputEventNumber8      InputEvent = "number8"
+	InputEventNumber9      InputEvent = "number9"
+	InputEventNumber0      InputEvent = "number0"
+	InputEventStar         InputEvent = "star"
+	InputEventPound        InputEvent = "pound"
 )
 
 // ProcessInputEvent will take in an InputEvent and run appropriate actions based on the event.
@@ -240,6 +252,42 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 		{
 			err = d.ChangeStateWithHistory(&StateMainMenu)
 			return err
+		}
+	case InputEventNumber1:
+		{
+		}
+	case InputEventNumber2:
+		{
+		}
+	case InputEventNumber3:
+		{
+		}
+	case InputEventNumber4:
+		{
+		}
+	case InputEventNumber5:
+		{
+		}
+	case InputEventNumber6:
+		{
+		}
+	case InputEventNumber7:
+		{
+		}
+	case InputEventNumber8:
+		{
+		}
+	case InputEventNumber9:
+		{
+		}
+	case InputEventNumber0:
+		{
+		}
+	case InputEventStar:
+		{
+		}
+	case InputEventPound:
+		{
 		}
 	}
 	return nil
