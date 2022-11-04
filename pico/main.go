@@ -41,13 +41,43 @@ func main() {
 	// Record the display size
 	displayx, displayy := display.Size()
 
-	// Setup input reading
-	controlUpSwitch := machine.GP4
-	controlDownSwitch := machine.GP3
-	controlConfirmSwitch := machine.GP2
-	controlUpSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
-	controlDownSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
-	controlConfirmSwitch.Configure(machine.PinConfig{Mode: machine.PinInputPullup})
+	// Setup input reading. The columns are read and the rows are pulsed.
+	buttonsCol1 := machine.GP4
+	buttonsCol2 := machine.GP5
+	buttonsCol3 := machine.GP6
+	buttonsCol4 := machine.GP7
+	buttonsCol5 := machine.GP8
+	buttonsRow1 := machine.GP16
+	buttonsRow2 := machine.GP17
+	buttonsRow3 := machine.GP20
+	buttonsRow4 := machine.SPI0_SDO_PIN
+	buttonsRow5 := machine.GP22
+
+	buttonsCol1.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsCol2.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsCol3.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsCol4.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsCol5.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsRow1.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow2.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow3.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow4.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow5.Configure(machine.PinConfig{Mode: machine.PinOutput})
+
+	buttonsRow1.Low()
+	buttonsRow2.Low()
+	buttonsRow3.Low()
+	buttonsRow4.Low()
+	buttonsRow5.Low()
+
+	// Define the input maps
+	buttons := [5][5]picodoomsdaymessenger.InputEvent{
+		{picodoomsdaymessenger.InputEventNumber1, picodoomsdaymessenger.InputEventNumber2, picodoomsdaymessenger.InputEventNumber3, picodoomsdaymessenger.InputEventFunction1, picodoomsdaymessenger.InputEventUp},
+		{picodoomsdaymessenger.InputEventNumber4, picodoomsdaymessenger.InputEventNumber5, picodoomsdaymessenger.InputEventNumber6, picodoomsdaymessenger.InputEventFunction2, picodoomsdaymessenger.InputEventDown},
+		{picodoomsdaymessenger.InputEventNumber7, picodoomsdaymessenger.InputEventNumber8, picodoomsdaymessenger.InputEventNumber9, picodoomsdaymessenger.InputEventFunction3, picodoomsdaymessenger.InputEventLeft},
+		{picodoomsdaymessenger.InputEventStar, picodoomsdaymessenger.InputEventNumber0, picodoomsdaymessenger.InputEventPound, picodoomsdaymessenger.InputEventFunction4, picodoomsdaymessenger.InputEventRight},
+		{picodoomsdaymessenger.InputEventOpenMainMenu, picodoomsdaymessenger.InputEventOpenMessages, picodoomsdaymessenger.InputEventOpenPeople, picodoomsdaymessenger.InputEventOpenSettings, picodoomsdaymessenger.InputEventAccept},
+	}
 
 	// Panic recovery
 	defer func() {
@@ -72,30 +102,68 @@ func main() {
 	}()
 
 	for {
-		if !controlConfirmSwitch.Get() {
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventAccept)
+		// Read the input
+		buttonsRow1.High()
+		time.Sleep(time.Millisecond * 1)
+		col := checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+		if col != 0 {
+			err := device.ProcessInputEvent(buttons[0][col-1])
+			time.Sleep(80 * time.Millisecond)
 			if err != nil {
 				handleError(&display, &led, device, err)
-				return
+				continue
 			}
-			time.Sleep(time.Millisecond * 250)
 		}
-		if !controlUpSwitch.Get() {
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventUp)
+		buttonsRow1.Low()
+		buttonsRow2.High()
+		time.Sleep(time.Millisecond * 1)
+		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+		if col != 0 {
+			err := device.ProcessInputEvent(buttons[1][col-1])
+			time.Sleep(80 * time.Millisecond)
 			if err != nil {
 				handleError(&display, &led, device, err)
-				return
+				continue
 			}
-			time.Sleep(time.Millisecond * 100)
 		}
-		if !controlDownSwitch.Get() {
-			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventDown)
+		buttonsRow2.Low()
+		buttonsRow3.High()
+		time.Sleep(time.Millisecond * 1)
+		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+		if col != 0 {
+			err := device.ProcessInputEvent(buttons[2][col-1])
+			time.Sleep(80 * time.Millisecond)
 			if err != nil {
 				handleError(&display, &led, device, err)
-				return
+				continue
 			}
-			time.Sleep(time.Millisecond * 100)
 		}
+		buttonsRow3.Low()
+		buttonsRow4.High()
+		time.Sleep(time.Millisecond * 1)
+		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+		if col != 0 {
+			err := device.ProcessInputEvent(buttons[3][col-1])
+			time.Sleep(80 * time.Millisecond)
+			if err != nil {
+				handleError(&display, &led, device, err)
+				continue
+			}
+		}
+		buttonsRow4.Low()
+		buttonsRow5.High()
+		time.Sleep(time.Millisecond * 1)
+		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+		if col != 0 {
+			err := device.ProcessInputEvent(buttons[4][col-1])
+			time.Sleep(80 * time.Millisecond)
+			if err != nil {
+				handleError(&display, &led, device, err)
+				continue
+			}
+		}
+		buttonsRow5.Low()
+
 		// Update the display if the state changes
 		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = *device.State
@@ -113,6 +181,25 @@ func main() {
 		}
 		time.Sleep(time.Millisecond * 1)
 	}
+}
+
+func checkInputCols(buttonsCol1, buttonsCol2, buttonsCol3, buttonsCol4, buttonsCol5 *machine.Pin) int {
+	if buttonsCol1.Get() {
+		return 1
+	}
+	if buttonsCol2.Get() {
+		return 2
+	}
+	if buttonsCol3.Get() {
+		return 3
+	}
+	if buttonsCol4.Get() {
+		return 4
+	}
+	if buttonsCol5.Get() {
+		return 5
+	}
+	return 0
 }
 
 // handleError takes in an error and communicates it to the user.
