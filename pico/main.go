@@ -10,6 +10,7 @@ import (
 
 	picodoomsdaymessenger "github.com/headblockhead/picoDoomsdayMessenger"
 	"tinygo.org/x/drivers/ssd1306"
+	"tinygo.org/x/drivers/ws2812"
 )
 
 func main() {
@@ -17,6 +18,11 @@ func main() {
 	led := machine.LED
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	led.Low()
+
+	neopixelpin := machine.GP3
+	neopixelpin.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	// Set the color of the LED to green.
+	leds := ws2812.New(neopixelpin)
 
 	// Setup the display
 	machine.I2C0.Configure(machine.I2CConfig{
@@ -36,7 +42,9 @@ func main() {
 	device := picodoomsdaymessenger.NewDevice()
 	// Set the old machine state and old menu item to something that is not the starting value.
 	oldDeviceState := picodoomsdaymessenger.StateDefault
-	oldDeviceHighlightedItem := picodoomsdaymessenger.GlobalMenuItemDefault
+	oldDeviceHighlightedItem := picodoomsdaymessenger.MenuItemDefault
+
+	animationMsCounter := 0
 
 	// Record the display size
 	displayx, displayy := display.Size()
@@ -101,14 +109,15 @@ func main() {
 		}
 	}()
 
+	// Main loop
 	for {
-		// Read the input
+		// Check the input
 		buttonsRow1.High()
 		time.Sleep(time.Millisecond * 1)
 		col := checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
 		if col != 0 {
 			err := device.ProcessInputEvent(buttons[0][col-1])
-			time.Sleep(80 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			if err != nil {
 				handleError(&display, &led, device, err)
 				continue
@@ -120,7 +129,7 @@ func main() {
 		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
 		if col != 0 {
 			err := device.ProcessInputEvent(buttons[1][col-1])
-			time.Sleep(80 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			if err != nil {
 				handleError(&display, &led, device, err)
 				continue
@@ -132,7 +141,7 @@ func main() {
 		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
 		if col != 0 {
 			err := device.ProcessInputEvent(buttons[2][col-1])
-			time.Sleep(80 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			if err != nil {
 				handleError(&display, &led, device, err)
 				continue
@@ -144,7 +153,7 @@ func main() {
 		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
 		if col != 0 {
 			err := device.ProcessInputEvent(buttons[3][col-1])
-			time.Sleep(80 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			if err != nil {
 				handleError(&display, &led, device, err)
 				continue
@@ -156,14 +165,13 @@ func main() {
 		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
 		if col != 0 {
 			err := device.ProcessInputEvent(buttons[4][col-1])
-			time.Sleep(80 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			if err != nil {
 				handleError(&display, &led, device, err)
 				continue
 			}
 		}
 		buttonsRow5.Low()
-
 		// Update the display if the state changes
 		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = *device.State
@@ -179,8 +187,37 @@ func main() {
 				return
 			}
 		}
+		// Update the LEDs
+		animationMsCounter++
+		if animationMsCounter%device.LedAnimation.FrameDurationCycles == 0 {
+			device.LedAnimation.CurrentFrame++
+			if device.LedAnimation.CurrentFrame >= len(device.LedAnimation.Frames) {
+				device.LedAnimation.CurrentFrame = 0
+			}
+			displayLEDArray(&leds, device.LedAnimation.Frames[device.LedAnimation.CurrentFrame])
+		}
 		time.Sleep(time.Millisecond * 1)
 	}
+}
+
+func displayLEDArray(leds *ws2812.Device, ledlist [6]color.RGBA) error {
+	for i := 0; i < len(ledlist); i++ {
+		for j := 0; j < 8; j++ {
+			err := leds.WriteByte(ledlist[i].G)
+			if err != nil {
+				return err
+			}
+			err = leds.WriteByte(ledlist[i].B)
+			if err != nil {
+				return err
+			}
+			err = leds.WriteByte(ledlist[i].R)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func checkInputCols(buttonsCol1, buttonsCol2, buttonsCol3, buttonsCol4, buttonsCol5 *machine.Pin) int {
