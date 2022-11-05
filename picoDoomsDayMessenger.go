@@ -13,9 +13,9 @@ import (
 
 // Basic structure.
 type Device struct {
-	State        *State
-	StateHistory []*State
-	LedAnimation *LEDAnimation
+	State               *State
+	StateHistory        []*State
+	CurrentLEDAnimation *LEDAnimation
 }
 type State struct {
 	Title           string
@@ -36,13 +36,15 @@ type LEDAnimation struct {
 
 // Define MenuItems
 var (
+	// Default Menu Items
 	MenuItemDefault MenuItem = MenuItem{
 		Name: "DefaultMenuItem",
 		Action: func(d *Device) (err error) {
-			return errors.New("If you see this error, this is not intended. Please contact the dev.")
+			return errors.New("default menu item action")
 		},
 		Index: 0,
 	}
+	// Global Menu Items
 	GlobalMenuItemGoBack MenuItem = MenuItem{
 		Name: "Go Back",
 		Action: func(d *Device) (err error) {
@@ -54,10 +56,11 @@ var (
 		},
 		Index: 0,
 	}
+	// Main Menu Items
 	MainMenuItemMessages MenuItem = MenuItem{
 		Name: "Messages",
 		Action: func(d *Device) (err error) {
-			d.ChangeStateWithHistory(&StateMessagesMenu)
+			err = d.ChangeStateWithHistory(&StateMessagesMenu)
 			if err != nil {
 				return err
 			}
@@ -68,7 +71,7 @@ var (
 	MainMenuItemPeople MenuItem = MenuItem{
 		Name: "People",
 		Action: func(d *Device) (err error) {
-			d.ChangeStateWithHistory(&StatePeopleMenu)
+			err = d.ChangeStateWithHistory(&StatePeopleMenu)
 			if err != nil {
 				return err
 			}
@@ -76,10 +79,10 @@ var (
 		},
 		Index: 1,
 	}
-	MainMenuItemSettings MenuItem = MenuItem{
-		Name: "Settings",
+	MainMenuItemGames MenuItem = MenuItem{
+		Name: "Games",
 		Action: func(d *Device) (err error) {
-			d.ChangeStateWithHistory(&StateSettingsMenu)
+			err = d.ChangeStateWithHistory(&StateGamesMenu)
 			if err != nil {
 				return err
 			}
@@ -87,13 +90,50 @@ var (
 		},
 		Index: 2,
 	}
-	MainMenuItemDemo MenuItem = MenuItem{
-		Name: "LED Demo",
+	MainMenuItemDemos MenuItem = MenuItem{
+		Name: "Demo",
 		Action: func(d *Device) (err error) {
-			d.LedAnimation = &LEDAnimationDemo
+			err = d.ChangeStateWithHistory(&StateDemosMenu)
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 		Index: 3,
+	}
+	MainMenuItemTools MenuItem = MenuItem{
+		Name: "Tools",
+		Action: func(d *Device) (err error) {
+			err = d.ChangeStateWithHistory(&StateToolsMenu)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+		Index: 4,
+	}
+	MainMenuItemSettings MenuItem = MenuItem{
+		Name: "Settings",
+		Action: func(d *Device) (err error) {
+			err = d.ChangeStateWithHistory(&StateSettingsMenu)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+		Index: 5,
+	}
+	// Tools Menu Items
+	ToolsMenuItemSOS MenuItem = MenuItem{
+		Name: "SOS Mode Toggle",
+		Action: func(d *Device) (err error) {
+			err = d.ChangeLEDAnimation(&LEDAnimationSOS)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+		Index: 1,
 	}
 )
 
@@ -106,7 +146,7 @@ var (
 	}
 	StateMainMenu = State{
 		Title:           "Main Menu",
-		Content:         []MenuItem{MainMenuItemMessages, MainMenuItemPeople, MainMenuItemSettings, MainMenuItemDemo},
+		Content:         []MenuItem{MainMenuItemMessages, MainMenuItemPeople, MainMenuItemSettings, MainMenuItemGames, MainMenuItemDemos, MainMenuItemTools},
 		HighlightedItem: MainMenuItemMessages,
 	}
 	StateMessagesMenu = State{
@@ -117,6 +157,21 @@ var (
 	StatePeopleMenu = State{
 		Title:           "People",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItem: GlobalMenuItemGoBack,
+	}
+	StateGamesMenu = State{
+		Title:           "Games",
+		Content:         []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItem: GlobalMenuItemGoBack,
+	}
+	StateDemosMenu = State{
+		Title:           "Demos",
+		Content:         []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItem: GlobalMenuItemGoBack,
+	}
+	StateToolsMenu = State{
+		Title:           "Tools",
+		Content:         []MenuItem{GlobalMenuItemGoBack, ToolsMenuItemSOS},
 		HighlightedItem: GlobalMenuItemGoBack,
 	}
 	StateSettingsMenu = State{
@@ -132,6 +187,44 @@ var (
 		FrameDuration: 0 * time.Second,
 		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+		},
+	}
+	LEDAnimationSOS = LEDAnimation{
+		FrameDuration: 200 * time.Millisecond,
+		CurrentFrame:  0,
+		Frames: [][6]color.RGBA{
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 		},
 	}
@@ -159,6 +252,12 @@ var (
 func NewDevice() (d *Device) {
 	newDevice := &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault}
 	return newDevice
+}
+
+// ChangeLEDAnimation changes the current LED animation of the device.
+func (d *Device) ChangeLEDAnimation(newAnimation *LEDAnimation) (err error) {
+	d.CurrentLEDAnimation = newAnimation
+	return nil
 }
 
 // ChangeStateWithHistory will take in a State and update the Device while adding the State to the StateHistory.

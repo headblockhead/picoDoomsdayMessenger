@@ -190,14 +190,15 @@ func main() {
 		}
 
 		// Display the next animation frame if it has been long enough since the last frame.
-		if lastAnimationFrame.Add(device.LedAnimation.FrameDuration).Before(time.Now()) {
-			device.LedAnimation.CurrentFrame++
-			if device.LedAnimation.CurrentFrame >= len(device.LedAnimation.Frames) {
-				device.LedAnimation.CurrentFrame = 0
+		if lastAnimationFrame.Add(device.CurrentLEDAnimation.FrameDuration).Before(time.Now()) {
+			device.CurrentLEDAnimation.CurrentFrame++
+			if device.CurrentLEDAnimation.CurrentFrame >= len(device.CurrentLEDAnimation.Frames) {
+				device.CurrentLEDAnimation.CurrentFrame = 0
 			}
-			displayLEDArray(&leds, device.LedAnimation.Frames[device.LedAnimation.CurrentFrame])
+			displayLEDArray(&leds, device.CurrentLEDAnimation.Frames[device.CurrentLEDAnimation.CurrentFrame])
 			lastAnimationFrame = time.Now()
 		}
+
 		time.Sleep(time.Millisecond * 1)
 	}
 }
