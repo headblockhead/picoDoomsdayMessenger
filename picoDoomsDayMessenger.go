@@ -4,6 +4,7 @@ import (
 	"errors"
 	"image"
 	"image/color"
+	"time"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
@@ -28,10 +29,9 @@ type MenuItem struct {
 	Index  int
 }
 type LEDAnimation struct {
-	FrameDurationCycles int
-	FrameCount          int
-	CurrentFrame        int
-	Frames              [][6]color.RGBA
+	FrameDuration time.Duration
+	CurrentFrame  int
+	Frames        [][6]color.RGBA
 }
 
 // Define MenuItems
@@ -129,121 +129,28 @@ var (
 // Define LED animations. They are made of multiple frames of 6 colors.
 var (
 	LEDAnimationDefault = LEDAnimation{
-		FrameDurationCycles: 1,
-		FrameCount:          1,
-		CurrentFrame:        0,
+		FrameDuration: 0 * time.Second,
+		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
-			{
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-			},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 		},
 	}
 	LEDAnimationDemo = LEDAnimation{
-		FrameDurationCycles: 1,
-		FrameCount:          12,
-		CurrentFrame:        0,
+		FrameDuration: 10 * time.Millisecond,
+		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
-			{
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-			},
-			{
-				color.RGBA{0, 255, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-			},
-			{
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{0, 255, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-			},
-			{
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{0, 255, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-			},
-			{
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{0, 255, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-			},
-			{
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{0, 255, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-			},
-			{
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{0, 255, 0, 0},
-			},
-			{
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-			},
-			{
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-			},
-			{
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-			},
-			{
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-				color.RGBA{255, 0, 0, 0},
-			},
-			{
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 0, 0},
-				color.RGBA{0, 0, 255, 0},
-			},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}},
 		},
 	}
 )
@@ -460,7 +367,7 @@ func GetErrorFrame(dimensions image.Rectangle, d *Device, inputErr string) (fram
 // drawText will write text in a 7x13 pixel font at a location.
 func drawText(img *image.RGBA, x, y int, text string) {
 	col := color.RGBA{255, 255, 255, 255}
-	point := fixed.Point26_6{fixed.I(x), fixed.I(y)}
+	point := fixed.Point26_6{X: fixed.I(x), Y: fixed.I(y)}
 
 	d := &font.Drawer{
 		Dst:  img,

@@ -44,7 +44,11 @@ func main() {
 	oldDeviceState := picodoomsdaymessenger.StateDefault
 	oldDeviceHighlightedItem := picodoomsdaymessenger.MenuItemDefault
 
-	animationMsCounter := 0
+	// Store the last time that an LED animation frame was displayed.
+	lastAnimationFrame := time.Now()
+
+	// Store the last time that any of the buttons were pressed.
+	lastButtonPress := time.Now()
 
 	// Record the display size
 	displayx, displayy := display.Size()
@@ -111,67 +115,64 @@ func main() {
 
 	// Main loop
 	for {
-		// Check the input
-		buttonsRow1.High()
-		time.Sleep(time.Millisecond * 1)
-		col := checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
-		if col != 0 {
-			err := device.ProcessInputEvent(buttons[0][col-1])
-			time.Sleep(100 * time.Millisecond)
-			if err != nil {
-				handleError(&display, &led, device, err)
-				continue
+		// Check the input if it has been long enough since the last button press.
+		if lastButtonPress.Add(100 * time.Millisecond).Before(time.Now()) {
+			buttonsRow1.High()
+			col := checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+			if col != 0 {
+				err := device.ProcessInputEvent(buttons[0][col-1])
+				if err != nil {
+					handleError(&display, &led, device, err)
+					continue
+				}
+				lastButtonPress = time.Now()
 			}
-		}
-		buttonsRow1.Low()
-		buttonsRow2.High()
-		time.Sleep(time.Millisecond * 1)
-		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
-		if col != 0 {
-			err := device.ProcessInputEvent(buttons[1][col-1])
-			time.Sleep(100 * time.Millisecond)
-			if err != nil {
-				handleError(&display, &led, device, err)
-				continue
+			buttonsRow1.Low()
+			buttonsRow2.High()
+			col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+			if col != 0 {
+				err := device.ProcessInputEvent(buttons[1][col-1])
+				if err != nil {
+					handleError(&display, &led, device, err)
+					continue
+				}
+				lastButtonPress = time.Now()
 			}
-		}
-		buttonsRow2.Low()
-		buttonsRow3.High()
-		time.Sleep(time.Millisecond * 1)
-		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
-		if col != 0 {
-			err := device.ProcessInputEvent(buttons[2][col-1])
-			time.Sleep(100 * time.Millisecond)
-			if err != nil {
-				handleError(&display, &led, device, err)
-				continue
+			buttonsRow2.Low()
+			buttonsRow3.High()
+			col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+			if col != 0 {
+				err := device.ProcessInputEvent(buttons[2][col-1])
+				if err != nil {
+					handleError(&display, &led, device, err)
+					continue
+				}
+				lastButtonPress = time.Now()
 			}
-		}
-		buttonsRow3.Low()
-		buttonsRow4.High()
-		time.Sleep(time.Millisecond * 1)
-		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
-		if col != 0 {
-			err := device.ProcessInputEvent(buttons[3][col-1])
-			time.Sleep(100 * time.Millisecond)
-			if err != nil {
-				handleError(&display, &led, device, err)
-				continue
+			buttonsRow3.Low()
+			buttonsRow4.High()
+			col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+			if col != 0 {
+				err := device.ProcessInputEvent(buttons[3][col-1])
+				if err != nil {
+					handleError(&display, &led, device, err)
+					continue
+				}
+				lastButtonPress = time.Now()
 			}
-		}
-		buttonsRow4.Low()
-		buttonsRow5.High()
-		time.Sleep(time.Millisecond * 1)
-		col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
-		if col != 0 {
-			err := device.ProcessInputEvent(buttons[4][col-1])
-			time.Sleep(100 * time.Millisecond)
-			if err != nil {
-				handleError(&display, &led, device, err)
-				continue
+			buttonsRow4.Low()
+			buttonsRow5.High()
+			col = checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
+			if col != 0 {
+				err := device.ProcessInputEvent(buttons[4][col-1])
+				if err != nil {
+					handleError(&display, &led, device, err)
+					continue
+				}
+				lastButtonPress = time.Now()
 			}
+			buttonsRow5.Low()
 		}
-		buttonsRow5.Low()
 		// Update the display if the state changes
 		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = *device.State
@@ -179,22 +180,23 @@ func main() {
 			frame, err := picodoomsdaymessenger.GetFrame(image.Rect(0, 0, int(displayx), int(displayy)), device)
 			if err != nil {
 				handleError(&display, &led, device, err)
-				return
+				continue
 			}
 			err = displayImage(&display, frame)
 			if err != nil {
 				handleError(&display, &led, device, err)
-				return
+				continue
 			}
 		}
-		// Update the LEDs
-		animationMsCounter++
-		if animationMsCounter%device.LedAnimation.FrameDurationCycles == 0 {
+
+		// Display the next animation frame if it has been long enough since the last frame.
+		if lastAnimationFrame.Add(device.LedAnimation.FrameDuration).Before(time.Now()) {
 			device.LedAnimation.CurrentFrame++
 			if device.LedAnimation.CurrentFrame >= len(device.LedAnimation.Frames) {
 				device.LedAnimation.CurrentFrame = 0
 			}
 			displayLEDArray(&leds, device.LedAnimation.Frames[device.LedAnimation.CurrentFrame])
+			lastAnimationFrame = time.Now()
 		}
 		time.Sleep(time.Millisecond * 1)
 	}
