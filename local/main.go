@@ -35,7 +35,7 @@ func run() {
 	displayx, displayy := 128, 64
 	// Set the old machine state and old menu item to something that is not the starting value.
 	oldDeviceState := picodoomsdaymessenger.StateDefault
-	oldDeviceHighlightedItem := picodoomsdaymessenger.MenuItemDefault
+	oldDeviceHighlightedItem := &picodoomsdaymessenger.MenuItemDefault
 
 	// Panic recovery
 	defer func() {

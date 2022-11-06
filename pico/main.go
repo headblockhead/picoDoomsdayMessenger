@@ -42,7 +42,7 @@ func main() {
 	device := picodoomsdaymessenger.NewDevice()
 	// Set the old machine state and old menu item to something that is not the starting value.
 	oldDeviceState := picodoomsdaymessenger.StateDefault
-	oldDeviceHighlightedItem := picodoomsdaymessenger.MenuItemDefault
+	oldDeviceHighlightedItem := &picodoomsdaymessenger.MenuItemDefault
 
 	// Store the last time that an LED animation frame was displayed.
 	lastAnimationFrame := time.Now()
@@ -190,12 +190,12 @@ func main() {
 		}
 
 		// Display the next animation frame if it has been long enough since the last frame.
-		if lastAnimationFrame.Add(device.CurrentLEDAnimation.FrameDuration).Before(time.Now()) {
-			device.CurrentLEDAnimation.CurrentFrame++
-			if device.CurrentLEDAnimation.CurrentFrame >= len(device.CurrentLEDAnimation.Frames) {
-				device.CurrentLEDAnimation.CurrentFrame = 0
+		if lastAnimationFrame.Add(device.LEDAnimation.FrameDuration).Before(time.Now()) {
+			device.LEDAnimation.CurrentFrame++
+			if device.LEDAnimation.CurrentFrame >= len(device.LEDAnimation.Frames) {
+				device.LEDAnimation.CurrentFrame = 0
 			}
-			displayLEDArray(&leds, device.CurrentLEDAnimation.Frames[device.CurrentLEDAnimation.CurrentFrame])
+			displayLEDArray(&leds, device.LEDAnimation.Frames[device.LEDAnimation.CurrentFrame])
 			lastAnimationFrame = time.Now()
 		}
 

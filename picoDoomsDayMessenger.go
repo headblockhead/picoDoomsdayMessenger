@@ -13,20 +13,24 @@ import (
 
 // Basic structure.
 type Device struct {
-	State               *State
-	StateHistory        []*State
-	CurrentLEDAnimation *LEDAnimation
+	State        *State
+	StateHistory []*State
+	LEDAnimation *LEDAnimation
 }
 type State struct {
 	Title           string
 	Content         []MenuItem
-	HighlightedItem MenuItem
+	HighlightedItem *MenuItem
 	LoadAction      func(d *Device) (err error)
 }
 type MenuItem struct {
-	Name   string
-	Action func(d *Device) (err error)
-	Index  int
+	Text       string
+	Action     func(d *Device) (err error)
+	Index      int
+	CursorIcon CursorIcon
+}
+type CursorIcon struct {
+	Draw func(img *image.RGBA, x int, y int, data interface{}) (err error)
 }
 type LEDAnimation struct {
 	FrameDuration time.Duration
@@ -34,19 +38,68 @@ type LEDAnimation struct {
 	Frames        [][6]color.RGBA
 }
 
+// Define Cursors
+var (
+	CursorIconRightArrow = CursorIcon{func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+		col := color.RGBA{255, 255, 255, 255}
+		img.Set(x+0, y+0, col)
+		img.Set(x+1, y+1, col)
+		img.Set(x+2, y+2, col)
+		img.Set(x+3, y+3, col)
+		img.Set(x+2, y+4, col)
+		img.Set(x+1, y+5, col)
+		img.Set(x+0, y+6, col)
+		return nil
+	},
+	}
+	CursorIconLeftArrow = CursorIcon{func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+		col := color.RGBA{255, 255, 255, 255}
+		img.Set(x+6, y+0, col)
+		img.Set(x+5, y+1, col)
+		img.Set(x+4, y+2, col)
+		img.Set(x+3, y+3, col)
+		img.Set(x+4, y+4, col)
+		img.Set(x+5, y+5, col)
+		img.Set(x+6, y+6, col)
+		return nil
+	},
+	}
+	CursorIconCheckBox = CursorIcon{func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+		isChecked, ok := data.(bool)
+		if !ok {
+			return errors.New("data is not a bool")
+		}
+		for i := 0; i < 7; i++ {
+			for j := 0; j < 7; j++ {
+				img.Set(x+i, y+j, color.RGBA{255, 255, 255, 255})
+			}
+		}
+		if !isChecked {
+			for i := 1; i < 6; i++ {
+				for j := 1; j < 6; j++ {
+					img.Set(x+i, y+j, color.RGBA{0, 0, 0, 255})
+				}
+			}
+		}
+		return nil
+	},
+	}
+)
+
 // Define MenuItems
 var (
 	// Default Menu Items
 	MenuItemDefault MenuItem = MenuItem{
-		Name: "DefaultMenuItem",
+		Text: "DefaultMenuItem",
 		Action: func(d *Device) (err error) {
 			return errors.New("default menu item action")
 		},
-		Index: 0,
+		Index:      0,
+		CursorIcon: CursorIconRightArrow,
 	}
 	// Global Menu Items
 	GlobalMenuItemGoBack MenuItem = MenuItem{
-		Name: "Go Back",
+		Text: "Go Back",
 		Action: func(d *Device) (err error) {
 			err = d.GoBackState()
 			if err != nil {
@@ -54,11 +107,12 @@ var (
 			}
 			return nil
 		},
-		Index: 0,
+		Index:      0,
+		CursorIcon: CursorIconLeftArrow,
 	}
 	// Main Menu Items
 	MainMenuItemMessages MenuItem = MenuItem{
-		Name: "Messages",
+		Text: "Messages",
 		Action: func(d *Device) (err error) {
 			err = d.ChangeStateWithHistory(&StateMessagesMenu)
 			if err != nil {
@@ -66,10 +120,11 @@ var (
 			}
 			return nil
 		},
-		Index: 0,
+		Index:      0,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemPeople MenuItem = MenuItem{
-		Name: "People",
+		Text: "People",
 		Action: func(d *Device) (err error) {
 			err = d.ChangeStateWithHistory(&StatePeopleMenu)
 			if err != nil {
@@ -77,10 +132,11 @@ var (
 			}
 			return nil
 		},
-		Index: 1,
+		Index:      1,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemGames MenuItem = MenuItem{
-		Name: "Games",
+		Text: "Games",
 		Action: func(d *Device) (err error) {
 			err = d.ChangeStateWithHistory(&StateGamesMenu)
 			if err != nil {
@@ -88,10 +144,11 @@ var (
 			}
 			return nil
 		},
-		Index: 2,
+		Index:      2,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemDemos MenuItem = MenuItem{
-		Name: "Demo",
+		Text: "Demo",
 		Action: func(d *Device) (err error) {
 			err = d.ChangeStateWithHistory(&StateDemosMenu)
 			if err != nil {
@@ -99,10 +156,11 @@ var (
 			}
 			return nil
 		},
-		Index: 3,
+		Index:      3,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemTools MenuItem = MenuItem{
-		Name: "Tools",
+		Text: "Tools",
 		Action: func(d *Device) (err error) {
 			err = d.ChangeStateWithHistory(&StateToolsMenu)
 			if err != nil {
@@ -110,10 +168,11 @@ var (
 			}
 			return nil
 		},
-		Index: 4,
+		Index:      4,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemSettings MenuItem = MenuItem{
-		Name: "Settings",
+		Text: "Settings",
 		Action: func(d *Device) (err error) {
 			err = d.ChangeStateWithHistory(&StateSettingsMenu)
 			if err != nil {
@@ -121,19 +180,28 @@ var (
 			}
 			return nil
 		},
-		Index: 5,
+		Index:      5,
+		CursorIcon: CursorIconRightArrow,
 	}
 	// Tools Menu Items
 	ToolsMenuItemSOS MenuItem = MenuItem{
-		Name: "SOS Mode Toggle",
+		Text: "SOS Mode",
 		Action: func(d *Device) (err error) {
-			err = d.ChangeLEDAnimation(&LEDAnimationSOS)
-			if err != nil {
-				return err
+			if d.LEDAnimation != &LEDAnimationSOS {
+				err = d.ChangeLEDAnimationWithoutContinue(&LEDAnimationSOS)
+				if err != nil {
+					return err
+				}
+			} else {
+				err = d.ChangeLEDAnimationWithoutContinue(&LEDAnimationDefault)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		},
-		Index: 1,
+		Index:      1,
+		CursorIcon: CursorIconCheckBox,
 	}
 )
 
@@ -142,42 +210,42 @@ var (
 	StateDefault = State{
 		Title:           "DefaultState",
 		Content:         []MenuItem{MenuItemDefault},
-		HighlightedItem: MenuItemDefault,
+		HighlightedItem: &MenuItemDefault,
 	}
 	StateMainMenu = State{
 		Title:           "Main Menu",
-		Content:         []MenuItem{MainMenuItemMessages, MainMenuItemPeople, MainMenuItemSettings, MainMenuItemGames, MainMenuItemDemos, MainMenuItemTools},
-		HighlightedItem: MainMenuItemMessages,
+		Content:         []MenuItem{MainMenuItemMessages, MainMenuItemPeople, MainMenuItemGames, MainMenuItemDemos, MainMenuItemTools, MainMenuItemSettings},
+		HighlightedItem: &MainMenuItemMessages,
 	}
 	StateMessagesMenu = State{
 		Title:           "Messages",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: GlobalMenuItemGoBack,
+		HighlightedItem: &GlobalMenuItemGoBack,
 	}
 	StatePeopleMenu = State{
 		Title:           "People",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: GlobalMenuItemGoBack,
+		HighlightedItem: &GlobalMenuItemGoBack,
 	}
 	StateGamesMenu = State{
 		Title:           "Games",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: GlobalMenuItemGoBack,
+		HighlightedItem: &GlobalMenuItemGoBack,
 	}
 	StateDemosMenu = State{
 		Title:           "Demos",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: GlobalMenuItemGoBack,
+		HighlightedItem: &GlobalMenuItemGoBack,
 	}
 	StateToolsMenu = State{
 		Title:           "Tools",
 		Content:         []MenuItem{GlobalMenuItemGoBack, ToolsMenuItemSOS},
-		HighlightedItem: GlobalMenuItemGoBack,
+		HighlightedItem: &GlobalMenuItemGoBack,
 	}
 	StateSettingsMenu = State{
 		Title:           "Settings",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: GlobalMenuItemGoBack,
+		HighlightedItem: &GlobalMenuItemGoBack,
 	}
 )
 
@@ -254,9 +322,16 @@ func NewDevice() (d *Device) {
 	return newDevice
 }
 
-// ChangeLEDAnimation changes the current LED animation of the device.
-func (d *Device) ChangeLEDAnimation(newAnimation *LEDAnimation) (err error) {
-	d.CurrentLEDAnimation = newAnimation
+// ChangeLEDAnimationWithoutContinue changes the current LED animation of the device without continuing from the last time it was played.
+func (d *Device) ChangeLEDAnimationWithoutContinue(newAnimation *LEDAnimation) (err error) {
+	d.LEDAnimation = newAnimation
+	d.LEDAnimation.CurrentFrame = 0
+	return nil
+}
+
+// ChangeLEDAnimation changes the current LED animation of the device and continues from the last time it was played.
+func (d *Device) ChangeLEDAnimationWithContinue(newAnimation *LEDAnimation) (err error) {
+	d.LEDAnimation = newAnimation
 	return nil
 }
 
@@ -330,14 +405,18 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 	switch inputEvent {
 	case InputEventUp:
 		{
-			if d.State.HighlightedItem.Index > 0 {
-				d.State.HighlightedItem = d.State.Content[d.State.HighlightedItem.Index-1]
+			if d.State.HighlightedItem.Index <= 0 {
+				d.State.HighlightedItem = &d.State.Content[len(d.State.Content)-1]
+			} else {
+				d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index-1]
 			}
 		}
 	case InputEventDown:
 		{
-			if d.State.HighlightedItem.Index < len(d.State.Content)-1 {
-				d.State.HighlightedItem = d.State.Content[d.State.HighlightedItem.Index+1]
+			if d.State.HighlightedItem.Index >= len(d.State.Content)-1 {
+				d.State.HighlightedItem = &d.State.Content[0]
+			} else {
+				d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index+1]
 			}
 		}
 	case InputEventLeft:
@@ -432,12 +511,27 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 // GetFrame will take in a Device and return an image based on the state.
 func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err error) {
 	img := image.NewRGBA(dimensions)
+
+	// Draw the content with the currently highlighted item in the middle of the screen and the other items above and below it.
+	for i := 0; i < len(d.State.Content); i++ {
+		if d.State.Content[i].Index == d.State.HighlightedItem.Index {
+			drawText(img, 0, 43, d.State.Content[i].Text)
+		} else if d.State.Content[i].Index < d.State.HighlightedItem.Index {
+			drawText(img, 0, 43-(d.State.HighlightedItem.Index-d.State.Content[i].Index)*12, d.State.Content[i].Text)
+		} else if d.State.Content[i].Index > d.State.HighlightedItem.Index {
+			drawText(img, 0, 43+(d.State.Content[i].Index-d.State.HighlightedItem.Index)*12, d.State.Content[i].Text)
+		}
+	}
+
+	// Draw the title.
+	drawBlackFilledBox(img, 0, 0, dimensions.Dx(), 16)
 	drawText(img, 0, 13, d.State.Title)
 	drawHLine(img, 0, 15, dimensions.Dx())
-	for i := 0; i < len(d.State.Content); i++ {
-		drawText(img, 0, 26+(13*(i)), d.State.Content[i].Name)
+
+	err = d.State.HighlightedItem.CursorIcon.Draw(img, dimensions.Dx()-7, 36, d.LEDAnimation == &LEDAnimationSOS)
+	if err != nil {
+		return nil, err
 	}
-	drawCursor(img, dimensions.Dx()-4, 6+(13*(d.State.HighlightedItem.Index+1)))
 	return img, nil
 }
 
@@ -477,21 +571,16 @@ func drawText(img *image.RGBA, x, y int, text string) {
 	d.DrawString(text)
 }
 
-// drawCursor will draw a small arrow. It is drawn based on the X and Y coordinates being at the top-left of the arrow.
-func drawCursor(img *image.RGBA, x int, y int) {
-	col := color.RGBA{255, 255, 255, 255}
-	img.Set(x+0, y+0, col)
-	img.Set(x+1, y+1, col)
-	img.Set(x+2, y+2, col)
-	img.Set(x+3, y+3, col)
-	img.Set(x+2, y+4, col)
-	img.Set(x+1, y+5, col)
-	img.Set(x+0, y+6, col)
-}
-
-// drawHLine draws a horizontal line from one X location to another. x2 has to be greater than x1.
+// drawHLine draws a white horizontal line from one X location to another. x2 has to be greater than x1.
 func drawHLine(img *image.RGBA, x1 int, y int, x2 int) {
 	col := color.RGBA{255, 255, 255, 255}
+	for ; x1 <= x2; x1++ {
+		img.Set(x1, y, col)
+	}
+}
+
+// drawHLineCol draws a horizontal line in a color of your choice from one X location to another. x2 has to be greater than x1.
+func drawHLineCol(img *image.RGBA, x1 int, y int, x2 int, col color.RGBA) {
 	for ; x1 <= x2; x1++ {
 		img.Set(x1, y, col)
 	}
@@ -502,5 +591,13 @@ func drawVLine(img *image.RGBA, y1 int, x int, y2 int) {
 	col := color.RGBA{255, 255, 255, 255}
 	for ; y1 <= y2; y1++ {
 		img.Set(x, y1, col)
+	}
+}
+
+// drawBlackFilledBox draws a filled blacck box from one X and Y location to another.
+func drawBlackFilledBox(img *image.RGBA, x1 int, y1 int, x2 int, y2 int) {
+	col := color.RGBA{0, 0, 0, 255}
+	for ; y1 <= y2; y1++ {
+		drawHLineCol(img, x1, y1, x2, col)
 	}
 }
