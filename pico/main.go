@@ -54,12 +54,16 @@ func main() {
 	displayx, displayy := display.Size()
 
 	// Set all the LEDs to black, do this multiple times to make sure they are all off.
+	blackLEDarray := [6]color.RGBA{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}
 	for i := 0; i < 8; i++ {
-		err := displayLEDArray(&leds, [6]color.RGBA{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}})
+		err := displayLEDArray(&leds, blackLEDarray)
 		if err != nil {
 			handleError(&display, &led, device, err)
 		}
 	}
+
+	// Clear the array, it is no longer needed.
+	blackLEDarray = [6]color.RGBA{}
 
 	// Setup input reading. The columns are read and the rows are pulsed.
 	buttonsCol1 := machine.GP4
