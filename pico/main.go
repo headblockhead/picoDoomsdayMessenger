@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Setup an LED so that if there is an error, we know about it.
-	led := machine.LED
+	led := machine.GPIO24
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	led.Low()
 
