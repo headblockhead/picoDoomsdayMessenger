@@ -4,6 +4,7 @@ import (
 	"errors"
 	"image"
 	"image/color"
+	"reflect"
 	"time"
 
 	"golang.org/x/image/font"
@@ -183,6 +184,27 @@ var (
 		Index:      5,
 		CursorIcon: CursorIconRightArrow,
 	}
+	// Games Menu Items
+	// Demos Menu Items
+	DemoMenuItemRGB MenuItem = MenuItem{
+		Text: "RGB Demo",
+		Action: func(d *Device) (err error) {
+			if d.LEDAnimation != &LEDAnimationDemo {
+				err = d.ChangeLEDAnimationWithoutContinue(&LEDAnimationDemo)
+				if err != nil {
+					return err
+				}
+			} else {
+				err = d.ChangeLEDAnimationWithoutContinue(&LEDAnimationDefault)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Index:      1,
+		CursorIcon: CursorIconCheckBox,
+	}
 	// Tools Menu Items
 	ToolsMenuItemSOS MenuItem = MenuItem{
 		Text: "SOS Mode",
@@ -234,7 +256,7 @@ var (
 	}
 	StateDemosMenu = State{
 		Title:           "Demos",
-		Content:         []MenuItem{GlobalMenuItemGoBack},
+		Content:         []MenuItem{GlobalMenuItemGoBack, DemoMenuItemRGB},
 		HighlightedItem: &GlobalMenuItemGoBack,
 	}
 	StateToolsMenu = State{
@@ -252,9 +274,10 @@ var (
 // Define LED animations. They are made of multiple frames of 6 colors.
 var (
 	LEDAnimationDefault = LEDAnimation{
-		FrameDuration: 0 * time.Second,
+		FrameDuration: 100 * time.Millisecond,
 		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 		},
 	}
@@ -297,23 +320,17 @@ var (
 		},
 	}
 	LEDAnimationDemo = LEDAnimation{
-		FrameDuration: 10 * time.Millisecond,
+		FrameDuration: 500 * time.Millisecond,
 		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 255, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{255, 0, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}},
-		},
-	}
+			{color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}},
+			{color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+		}}
 )
 
 // NewDevice returns a new Device with default parameters.
@@ -528,9 +545,24 @@ func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err err
 	drawText(img, 0, 13, d.State.Title)
 	drawHLine(img, 0, 15, dimensions.Dx())
 
-	err = d.State.HighlightedItem.CursorIcon.Draw(img, dimensions.Dx()-7, 36, d.LEDAnimation == &LEDAnimationSOS)
-	if err != nil {
-		return nil, err
+	// Draw the cursor. If the cursor is a checkbox, check if the checkbox is checked or not.
+	if reflect.DeepEqual(d.State.HighlightedItem.CursorIcon, CursorIconCheckBox) {
+		panic("SOS highligted")
+		err = d.State.HighlightedItem.CursorIcon.Draw(img, dimensions.Dx()-7, 36, d.LEDAnimation == &LEDAnimationSOS)
+		if err != nil {
+			return nil, err
+		}
+	} else if d.State.HighlightedItem == &DemoMenuItemRGB {
+		panic("RGB highligted")
+		err = d.State.HighlightedItem.CursorIcon.Draw(img, dimensions.Dx()-7, 36, d.LEDAnimation == &LEDAnimationDemo)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = d.State.HighlightedItem.CursorIcon.Draw(img, dimensions.Dx()-7, 36, false)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return img, nil
 }
