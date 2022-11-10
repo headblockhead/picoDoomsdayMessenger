@@ -11,18 +11,22 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Basic structure.
+// Device is the main structure that holds all the information about the device. It has a State, a StateHistory, and an LEDAnimation.
 type Device struct {
 	State        *State
 	StateHistory []*State
 	LEDAnimation *LEDAnimation
 }
+
+// State is the current state of the device. It contains all the information about what is currently being displayed.
 type State struct {
 	Title           string
 	Content         []MenuItem
 	HighlightedItem *MenuItem
 	LoadAction      func(d *Device) (err error)
 }
+
+// MenuItem is a structure that holds data that can be displayed on the screen. It contains a title and an action that is run when the item is selected.
 type MenuItem struct {
 	Text          string
 	Action        func(d *Device) (err error)
@@ -30,7 +34,11 @@ type MenuItem struct {
 	GetCursorData func(d *Device) (data interface{}, err error)
 	CursorIcon    CursorIcon
 }
+
+// CursorIcon is a function that draws a cursor icon based on the data at a location.
 type CursorIcon func(img *image.RGBA, x int, y int, data interface{}) (err error)
+
+// LEDAnimation is a structure that holds information about an LED animation.
 type LEDAnimation struct {
 	FrameDuration time.Duration
 	CurrentFrame  int
@@ -39,6 +47,7 @@ type LEDAnimation struct {
 
 // Define Cursors
 var (
+	// CursorIconRightArrow is a cursor that is a right arrow. It does not need any data.
 	CursorIconRightArrow = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
 		col := color.RGBA{255, 255, 255, 255}
 		img.Set(x+0, y+0, col)
@@ -50,6 +59,7 @@ var (
 		img.Set(x+0, y+6, col)
 		return nil
 	}
+	// CursorIconLeftArrow is a cursor that is a left arrow. It does not need any data.
 	CursorIconLeftArrow = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
 		col := color.RGBA{255, 255, 255, 255}
 		img.Set(x+6, y+0, col)
@@ -61,7 +71,8 @@ var (
 		img.Set(x+6, y+6, col)
 		return nil
 	}
-	CursorIconCheckBox = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+	// CursorIconBox is a cursor that is a box. It takes in a bool as data. If the bool is true, the box will be filled in. If the bool is false, the box will be empty.
+	CursorIconBox = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
 		isChecked, ok := data.(bool)
 		if !ok {
 			return errors.New("data is not a bool")
@@ -84,19 +95,23 @@ var (
 
 // Define MenuItems
 var (
+
 	// Default Menu Items
+
+	// MenuItemDefault is a MenuItem that does nothing. It is used as a placeholder for the default State of the device.
 	MenuItemDefault MenuItem = MenuItem{
 		Text: "DefaultMenuItem",
 		Action: func(d *Device) (err error) {
 			return errors.New("default menu item action")
 		},
-		Index: 0,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
-			return nil, nil
-		},
-		CursorIcon: CursorIconRightArrow,
+		Index:         0,
+		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
+		CursorIcon:    CursorIconRightArrow,
 	}
+
 	// Global Menu Items
+
+	// GlobalMenuItemGoBack is a MenuItem that goes back to the previous state in the StateHistory.
 	GlobalMenuItemGoBack MenuItem = MenuItem{
 		Text: "Go Back",
 		Action: func(d *Device) (err error) {
@@ -106,13 +121,14 @@ var (
 			}
 			return nil
 		},
-		Index: 0,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
-			return nil, nil
-		},
-		CursorIcon: CursorIconLeftArrow,
+		Index:         0,
+		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
+		CursorIcon:    CursorIconLeftArrow,
 	}
+
 	// Main Menu Items
+
+	// MainMenuItemMessages is a MenuItem that goes to the Messages menu.
 	MainMenuItemMessages MenuItem = MenuItem{
 		Text: "Messages",
 		Action: func(d *Device) (err error) {
@@ -122,12 +138,12 @@ var (
 			}
 			return nil
 		},
-		Index: 0,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
-			return nil, nil
-		},
-		CursorIcon: CursorIconRightArrow,
+		Index:         0,
+		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
+		CursorIcon:    CursorIconRightArrow,
 	}
+
+	// MainMenuItemPeople is a MenuItem that goes to the People menu.
 	MainMenuItemPeople MenuItem = MenuItem{
 		Text: "People",
 		Action: func(d *Device) (err error) {
@@ -137,12 +153,12 @@ var (
 			}
 			return nil
 		},
-		Index: 1,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
-			return nil, nil
-		},
-		CursorIcon: CursorIconRightArrow,
+		Index:         1,
+		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
+		CursorIcon:    CursorIconRightArrow,
 	}
+
+	// MainMenuItemGames is a MenuItem that goes to the Games menu.
 	MainMenuItemGames MenuItem = MenuItem{
 		Text: "Games",
 		Action: func(d *Device) (err error) {
@@ -152,12 +168,12 @@ var (
 			}
 			return nil
 		},
-		Index: 2,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
-			return nil, nil
-		},
-		CursorIcon: CursorIconRightArrow,
+		Index:         2,
+		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
+		CursorIcon:    CursorIconRightArrow,
 	}
+
+	// MainMenuItemDemos is a MenuItem that goes to the Demos menu.
 	MainMenuItemDemos MenuItem = MenuItem{
 		Text: "Demo",
 		Action: func(d *Device) (err error) {
@@ -167,12 +183,12 @@ var (
 			}
 			return nil
 		},
-		Index: 3,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
-			return nil, nil
-		},
-		CursorIcon: CursorIconRightArrow,
+		Index:         3,
+		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
+		CursorIcon:    CursorIconRightArrow,
 	}
+
+	// MainMenuItemTools is a MenuItem that goes to the Tools menu.
 	MainMenuItemTools MenuItem = MenuItem{
 		Text: "Tools",
 		Action: func(d *Device) (err error) {
@@ -182,12 +198,12 @@ var (
 			}
 			return nil
 		},
-		Index: 4,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
-			return nil, nil
-		},
-		CursorIcon: CursorIconRightArrow,
+		Index:         4,
+		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
+		CursorIcon:    CursorIconRightArrow,
 	}
+
+	// MainMenuItemSettings is a MenuItem that goes to the Settings menu.
 	MainMenuItemSettings MenuItem = MenuItem{
 		Text: "Settings",
 		Action: func(d *Device) (err error) {
@@ -197,14 +213,16 @@ var (
 			}
 			return nil
 		},
-		Index: 5,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
-			return nil, nil
-		},
-		CursorIcon: CursorIconRightArrow,
+		Index:         5,
+		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
+		CursorIcon:    CursorIconRightArrow,
 	}
+
 	// Games Menu Items
+
 	// Demos Menu Items
+
+	// DemoMenuItemRGB is a MenuItem that toggles a demo of the RGB LEDs.
 	DemoMenuItemRGB MenuItem = MenuItem{
 		Text: "RGB Demo",
 		Action: func(d *Device) (err error) {
@@ -225,9 +243,12 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return d.LEDAnimation == &LEDAnimationDemo, nil
 		},
-		CursorIcon: CursorIconCheckBox,
+		CursorIcon: CursorIconBox,
 	}
+
 	// Tools Menu Items
+
+	// ToolsMenuItemSOS is a MenuItem that toggles a SOS message shown in morse code through the RGB LEDs.
 	ToolsMenuItemSOS MenuItem = MenuItem{
 		Text: "SOS Mode",
 		Action: func(d *Device) (err error) {
@@ -248,47 +269,55 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return d.LEDAnimation == &LEDAnimationSOS, nil
 		},
-		CursorIcon: CursorIconCheckBox,
+		CursorIcon: CursorIconBox,
 	}
 )
 
 // Define States
 var (
+	// StateDefault is a State that does nothing. It is used as a placeholder for the default State of the Device.
 	StateDefault = State{
 		Title:           "DefaultState",
 		Content:         []MenuItem{MenuItemDefault},
 		HighlightedItem: &MenuItemDefault,
 	}
+	// StateMainMenu is a State that shows the main menu.
 	StateMainMenu = State{
 		Title:           "Main Menu",
 		Content:         []MenuItem{MainMenuItemMessages, MainMenuItemPeople, MainMenuItemGames, MainMenuItemDemos, MainMenuItemTools, MainMenuItemSettings},
 		HighlightedItem: &MainMenuItemMessages,
 	}
+	// StateMessagesMenu is a State that shows the messages menu.
 	StateMessagesMenu = State{
 		Title:           "Messages",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
 		HighlightedItem: &GlobalMenuItemGoBack,
 	}
+	// StatePeopleMenu is a State that shows the people menu.
 	StatePeopleMenu = State{
 		Title:           "People",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
 		HighlightedItem: &GlobalMenuItemGoBack,
 	}
+	// StateGamesMenu is a State that shows the games menu.
 	StateGamesMenu = State{
 		Title:           "Games",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
 		HighlightedItem: &GlobalMenuItemGoBack,
 	}
+	// StateDemosMenu is a State that shows the demos menu.
 	StateDemosMenu = State{
 		Title:           "Demos",
 		Content:         []MenuItem{GlobalMenuItemGoBack, DemoMenuItemRGB},
 		HighlightedItem: &GlobalMenuItemGoBack,
 	}
+	// StateToolsMenu is a State that shows the tools menu.
 	StateToolsMenu = State{
 		Title:           "Tools",
 		Content:         []MenuItem{GlobalMenuItemGoBack, ToolsMenuItemSOS},
 		HighlightedItem: &GlobalMenuItemGoBack,
 	}
+	// StateSettingsMenu is a State that shows the settings menu.
 	StateSettingsMenu = State{
 		Title:           "Settings",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
@@ -298,6 +327,7 @@ var (
 
 // Define LED animations. They are made of multiple frames of 6 colors.
 var (
+	// LEDAnimationDefault is the default LED animation. It is used when no other animation is active and is simply black.
 	LEDAnimationDefault = LEDAnimation{
 		FrameDuration: 5 * time.Millisecond,
 		CurrentFrame:  0,
@@ -306,6 +336,7 @@ var (
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 		},
 	}
+	// LEDAnimationSOS is an LED animation that shows the SOS message in morse code.
 	LEDAnimationSOS = LEDAnimation{
 		FrameDuration: 200 * time.Millisecond,
 		CurrentFrame:  0,
@@ -344,6 +375,7 @@ var (
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 		},
 	}
+	// LEDAnimationDemo is an LED animation that shows off the capabilities of the LED animation system.
 	LEDAnimationDemo = LEDAnimation{
 		FrameDuration: 500 * time.Millisecond,
 		CurrentFrame:  0,
@@ -413,6 +445,7 @@ func (d *Device) GoBackState() (err error) {
 	return nil
 }
 
+// InputEvent is a string that represents a button press.
 type InputEvent string
 
 const (
