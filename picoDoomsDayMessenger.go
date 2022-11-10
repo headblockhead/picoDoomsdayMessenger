@@ -24,11 +24,11 @@ type State struct {
 	LoadAction      func(d *Device) (err error)
 }
 type MenuItem struct {
-	Text           string
-	Action         func(d *Device) (err error)
-	Index          int
-	GetCursorData  func(d *Device) (data interface{}, err error)
-	DrawCursorIcon CursorIcon
+	Text          string
+	Action        func(d *Device) (err error)
+	Index         int
+	GetCursorData func(d *Device) (data interface{}, err error)
+	CursorIcon    CursorIcon
 }
 type CursorIcon func(img *image.RGBA, x int, y int, data interface{}) (err error)
 type LEDAnimation struct {
@@ -94,7 +94,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return nil, nil
 		},
-		DrawCursorIcon: CursorIconRightArrow,
+		CursorIcon: CursorIconRightArrow,
 	}
 	// Global Menu Items
 	GlobalMenuItemGoBack MenuItem = MenuItem{
@@ -110,7 +110,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return nil, nil
 		},
-		DrawCursorIcon: CursorIconLeftArrow,
+		CursorIcon: CursorIconLeftArrow,
 	}
 	// Main Menu Items
 	MainMenuItemMessages MenuItem = MenuItem{
@@ -126,7 +126,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return nil, nil
 		},
-		DrawCursorIcon: CursorIconRightArrow,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemPeople MenuItem = MenuItem{
 		Text: "People",
@@ -141,7 +141,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return nil, nil
 		},
-		DrawCursorIcon: CursorIconRightArrow,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemGames MenuItem = MenuItem{
 		Text: "Games",
@@ -156,7 +156,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return nil, nil
 		},
-		DrawCursorIcon: CursorIconRightArrow,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemDemos MenuItem = MenuItem{
 		Text: "Demo",
@@ -171,7 +171,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return nil, nil
 		},
-		DrawCursorIcon: CursorIconRightArrow,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemTools MenuItem = MenuItem{
 		Text: "Tools",
@@ -186,7 +186,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return nil, nil
 		},
-		DrawCursorIcon: CursorIconRightArrow,
+		CursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemSettings MenuItem = MenuItem{
 		Text: "Settings",
@@ -201,7 +201,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return nil, nil
 		},
-		DrawCursorIcon: CursorIconRightArrow,
+		CursorIcon: CursorIconRightArrow,
 	}
 	// Games Menu Items
 	// Demos Menu Items
@@ -225,7 +225,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return d.LEDAnimation == &LEDAnimationDemo, nil
 		},
-		DrawCursorIcon: CursorIconCheckBox,
+		CursorIcon: CursorIconCheckBox,
 	}
 	// Tools Menu Items
 	ToolsMenuItemSOS MenuItem = MenuItem{
@@ -248,7 +248,7 @@ var (
 		GetCursorData: func(d *Device) (data interface{}, err error) {
 			return d.LEDAnimation == &LEDAnimationSOS, nil
 		},
-		DrawCursorIcon: CursorIconCheckBox,
+		CursorIcon: CursorIconCheckBox,
 	}
 )
 
@@ -573,7 +573,7 @@ func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err err
 
 	// Draw the cursor. If the cursor is a checkbox, check if the checkbox is checked or not.
 	cursorData, err := d.State.HighlightedItem.GetCursorData(d)
-	err = d.State.HighlightedItem.DrawCursorIcon(img, dimensions.Dx()-7, 36, cursorData)
+	err = d.State.HighlightedItem.CursorIcon(img, dimensions.Dx()-7, 36, cursorData)
 	if err != nil {
 		return nil, err
 	}
