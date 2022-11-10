@@ -4,7 +4,6 @@ import (
 	"errors"
 	"image"
 	"image/color"
-	"reflect"
 	"time"
 
 	"golang.org/x/image/font"
@@ -25,14 +24,13 @@ type State struct {
 	LoadAction      func(d *Device) (err error)
 }
 type MenuItem struct {
-	Text       string
-	Action     func(d *Device) (err error)
-	Index      int
-	CursorIcon CursorIcon
+	Text           string
+	Action         func(d *Device) (err error)
+	Index          int
+	GetCursorData  func(d *Device) (data interface{}, err error)
+	DrawCursorIcon CursorIcon
 }
-type CursorIcon struct {
-	Draw func(img *image.RGBA, x int, y int, data interface{}) (err error)
-}
+type CursorIcon func(img *image.RGBA, x int, y int, data interface{}) (err error)
 type LEDAnimation struct {
 	FrameDuration time.Duration
 	CurrentFrame  int
@@ -41,7 +39,7 @@ type LEDAnimation struct {
 
 // Define Cursors
 var (
-	CursorIconRightArrow = CursorIcon{func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+	CursorIconRightArrow = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
 		col := color.RGBA{255, 255, 255, 255}
 		img.Set(x+0, y+0, col)
 		img.Set(x+1, y+1, col)
@@ -51,9 +49,8 @@ var (
 		img.Set(x+1, y+5, col)
 		img.Set(x+0, y+6, col)
 		return nil
-	},
 	}
-	CursorIconLeftArrow = CursorIcon{func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+	CursorIconLeftArrow = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
 		col := color.RGBA{255, 255, 255, 255}
 		img.Set(x+6, y+0, col)
 		img.Set(x+5, y+1, col)
@@ -63,9 +60,8 @@ var (
 		img.Set(x+5, y+5, col)
 		img.Set(x+6, y+6, col)
 		return nil
-	},
 	}
-	CursorIconCheckBox = CursorIcon{func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+	CursorIconCheckBox = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
 		isChecked, ok := data.(bool)
 		if !ok {
 			return errors.New("data is not a bool")
@@ -83,7 +79,6 @@ var (
 			}
 		}
 		return nil
-	},
 	}
 )
 
@@ -95,8 +90,11 @@ var (
 		Action: func(d *Device) (err error) {
 			return errors.New("default menu item action")
 		},
-		Index:      0,
-		CursorIcon: CursorIconRightArrow,
+		Index: 0,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return nil, nil
+		},
+		DrawCursorIcon: CursorIconRightArrow,
 	}
 	// Global Menu Items
 	GlobalMenuItemGoBack MenuItem = MenuItem{
@@ -108,8 +106,11 @@ var (
 			}
 			return nil
 		},
-		Index:      0,
-		CursorIcon: CursorIconLeftArrow,
+		Index: 0,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return nil, nil
+		},
+		DrawCursorIcon: CursorIconLeftArrow,
 	}
 	// Main Menu Items
 	MainMenuItemMessages MenuItem = MenuItem{
@@ -121,8 +122,11 @@ var (
 			}
 			return nil
 		},
-		Index:      0,
-		CursorIcon: CursorIconRightArrow,
+		Index: 0,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return nil, nil
+		},
+		DrawCursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemPeople MenuItem = MenuItem{
 		Text: "People",
@@ -133,8 +137,11 @@ var (
 			}
 			return nil
 		},
-		Index:      1,
-		CursorIcon: CursorIconRightArrow,
+		Index: 1,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return nil, nil
+		},
+		DrawCursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemGames MenuItem = MenuItem{
 		Text: "Games",
@@ -145,8 +152,11 @@ var (
 			}
 			return nil
 		},
-		Index:      2,
-		CursorIcon: CursorIconRightArrow,
+		Index: 2,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return nil, nil
+		},
+		DrawCursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemDemos MenuItem = MenuItem{
 		Text: "Demo",
@@ -157,8 +167,11 @@ var (
 			}
 			return nil
 		},
-		Index:      3,
-		CursorIcon: CursorIconRightArrow,
+		Index: 3,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return nil, nil
+		},
+		DrawCursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemTools MenuItem = MenuItem{
 		Text: "Tools",
@@ -169,8 +182,11 @@ var (
 			}
 			return nil
 		},
-		Index:      4,
-		CursorIcon: CursorIconRightArrow,
+		Index: 4,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return nil, nil
+		},
+		DrawCursorIcon: CursorIconRightArrow,
 	}
 	MainMenuItemSettings MenuItem = MenuItem{
 		Text: "Settings",
@@ -181,8 +197,11 @@ var (
 			}
 			return nil
 		},
-		Index:      5,
-		CursorIcon: CursorIconRightArrow,
+		Index: 5,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return nil, nil
+		},
+		DrawCursorIcon: CursorIconRightArrow,
 	}
 	// Games Menu Items
 	// Demos Menu Items
@@ -202,8 +221,11 @@ var (
 			}
 			return nil
 		},
-		Index:      1,
-		CursorIcon: CursorIconCheckBox,
+		Index: 1,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return d.LEDAnimation == &LEDAnimationDemo, nil
+		},
+		DrawCursorIcon: CursorIconCheckBox,
 	}
 	// Tools Menu Items
 	ToolsMenuItemSOS MenuItem = MenuItem{
@@ -222,8 +244,11 @@ var (
 			}
 			return nil
 		},
-		Index:      1,
-		CursorIcon: CursorIconCheckBox,
+		Index: 1,
+		GetCursorData: func(d *Device) (data interface{}, err error) {
+			return d.LEDAnimation == &LEDAnimationSOS, nil
+		},
+		DrawCursorIcon: CursorIconCheckBox,
 	}
 )
 
@@ -274,7 +299,7 @@ var (
 // Define LED animations. They are made of multiple frames of 6 colors.
 var (
 	LEDAnimationDefault = LEDAnimation{
-		FrameDuration: 100 * time.Millisecond,
+		FrameDuration: 5 * time.Millisecond,
 		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
@@ -285,31 +310,31 @@ var (
 		FrameDuration: 200 * time.Millisecond,
 		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 0, 0, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}, color.RGBA{255, 255, 255, 255}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
@@ -324,12 +349,13 @@ var (
 		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
 			{color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{255, 0, 0, 0}},
-			{color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 255, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{255, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}, color.RGBA{255, 0, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}, color.RGBA{0, 255, 0, 0}},
+			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 255, 0}},
 		}}
 )
 
@@ -546,24 +572,12 @@ func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err err
 	drawHLine(img, 0, 15, dimensions.Dx())
 
 	// Draw the cursor. If the cursor is a checkbox, check if the checkbox is checked or not.
-	if reflect.DeepEqual(d.State.HighlightedItem.CursorIcon, CursorIconCheckBox) {
-		panic("SOS highligted")
-		err = d.State.HighlightedItem.CursorIcon.Draw(img, dimensions.Dx()-7, 36, d.LEDAnimation == &LEDAnimationSOS)
-		if err != nil {
-			return nil, err
-		}
-	} else if d.State.HighlightedItem == &DemoMenuItemRGB {
-		panic("RGB highligted")
-		err = d.State.HighlightedItem.CursorIcon.Draw(img, dimensions.Dx()-7, 36, d.LEDAnimation == &LEDAnimationDemo)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		err = d.State.HighlightedItem.CursorIcon.Draw(img, dimensions.Dx()-7, 36, false)
-		if err != nil {
-			return nil, err
-		}
+	cursorData, err := d.State.HighlightedItem.GetCursorData(d)
+	err = d.State.HighlightedItem.DrawCursorIcon(img, dimensions.Dx()-7, 36, cursorData)
+	if err != nil {
+		return nil, err
 	}
+
 	return img, nil
 }
 

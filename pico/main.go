@@ -44,6 +44,13 @@ func main() {
 	oldDeviceState := picodoomsdaymessenger.StateDefault
 	oldDeviceHighlightedItem := &picodoomsdaymessenger.MenuItemDefault
 
+	// Clear the LED array.
+	ledlist := [6]color.RGBA{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}
+	err := displayLEDArray(&leds, ledlist)
+	if err != nil {
+		handleError(&display, &led, device, err)
+	}
+
 	// Store the last time that an LED animation frame was displayed.
 	lastAnimationFrame := time.Now()
 
@@ -191,36 +198,19 @@ func main() {
 
 		// Display the next animation frame if it has been long enough since the last frame.
 		if lastAnimationFrame.Add(device.LEDAnimation.FrameDuration).Before(time.Now()) {
-			device.LEDAnimation.CurrentFrame++
 			if device.LEDAnimation.CurrentFrame >= len(device.LEDAnimation.Frames) {
 				device.LEDAnimation.CurrentFrame = 0
 			}
 			displayLEDArray(&leds, device.LEDAnimation.Frames[device.LEDAnimation.CurrentFrame])
+			device.LEDAnimation.CurrentFrame++
 			lastAnimationFrame = time.Now()
 		}
-
-		time.Sleep(time.Millisecond * 1)
 	}
 }
 
 func displayLEDArray(leds *ws2812.Device, ledlist [6]color.RGBA) error {
-	for i := 0; i < len(ledlist); i++ {
-		for j := 0; j < 8; j++ {
-			err := leds.WriteByte(ledlist[i].G)
-			if err != nil {
-				return err
-			}
-			err = leds.WriteByte(ledlist[i].B)
-			if err != nil {
-				return err
-			}
-			err = leds.WriteByte(ledlist[i].R)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	err := leds.WriteColors(ledlist[:])
+	return err
 }
 
 func checkInputCols(buttonsCol1, buttonsCol2, buttonsCol3, buttonsCol4, buttonsCol5 *machine.Pin) int {
