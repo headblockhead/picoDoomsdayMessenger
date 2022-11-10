@@ -19,11 +19,6 @@ func main() {
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	led.Low()
 
-	// Setup the RGB LED array.
-	neopixelpin := machine.GP3
-	neopixelpin.Configure(machine.PinConfig{Mode: machine.PinOutput})
-	leds := ws2812.New(neopixelpin)
-
 	// Setup the display
 	machine.I2C0.Configure(machine.I2CConfig{
 		Frequency: machine.TWI_FREQ_400KHZ,
@@ -38,67 +33,17 @@ func main() {
 	})
 	display.ClearDisplay()
 
+	// Record the display size
+	displayx, displayy := display.Size()
+
 	// Create a new Machine
 	device := picodoomsdaymessenger.NewDevice()
+
 	// Set the old machine state and old menu item to something that is not the starting value.
 	oldDeviceState := picodoomsdaymessenger.StateDefault
 	oldDeviceHighlightedItem := &picodoomsdaymessenger.MenuItemDefault
 
-	// Clear the LED array.
-	ledlist := [6]color.RGBA{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}
-	err := displayLEDArray(&leds, ledlist)
-	if err != nil {
-		handleError(&display, &led, device, err)
-	}
-
-	// Store the last time that an LED animation frame was displayed.
-	lastAnimationFrame := time.Now()
-
-	// Store the last time that any of the buttons were pressed.
-	lastButtonPress := time.Now()
-
-	// Record the display size
-	displayx, displayy := display.Size()
-
-	// Setup input reading. The columns are read and the rows are pulsed.
-	buttonsCol1 := machine.GP4
-	buttonsCol2 := machine.GP5
-	buttonsCol3 := machine.GP6
-	buttonsCol4 := machine.GP7
-	buttonsCol5 := machine.GP8
-	buttonsRow1 := machine.GP16
-	buttonsRow2 := machine.GP17
-	buttonsRow3 := machine.GP20
-	buttonsRow4 := machine.SPI0_SDO_PIN
-	buttonsRow5 := machine.GP22
-
-	buttonsCol1.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsCol2.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsCol3.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsCol4.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsCol5.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsRow1.Configure(machine.PinConfig{Mode: machine.PinOutput})
-	buttonsRow2.Configure(machine.PinConfig{Mode: machine.PinOutput})
-	buttonsRow3.Configure(machine.PinConfig{Mode: machine.PinOutput})
-	buttonsRow4.Configure(machine.PinConfig{Mode: machine.PinOutput})
-	buttonsRow5.Configure(machine.PinConfig{Mode: machine.PinOutput})
-
-	buttonsRow1.Low()
-	buttonsRow2.Low()
-	buttonsRow3.Low()
-	buttonsRow4.Low()
-	buttonsRow5.Low()
-
-	// Define the input maps
-	buttons := [5][5]picodoomsdaymessenger.InputEvent{
-		{picodoomsdaymessenger.InputEventNumber1, picodoomsdaymessenger.InputEventNumber2, picodoomsdaymessenger.InputEventNumber3, picodoomsdaymessenger.InputEventFunction1, picodoomsdaymessenger.InputEventUp},
-		{picodoomsdaymessenger.InputEventNumber4, picodoomsdaymessenger.InputEventNumber5, picodoomsdaymessenger.InputEventNumber6, picodoomsdaymessenger.InputEventFunction2, picodoomsdaymessenger.InputEventDown},
-		{picodoomsdaymessenger.InputEventNumber7, picodoomsdaymessenger.InputEventNumber8, picodoomsdaymessenger.InputEventNumber9, picodoomsdaymessenger.InputEventFunction3, picodoomsdaymessenger.InputEventLeft},
-		{picodoomsdaymessenger.InputEventStar, picodoomsdaymessenger.InputEventNumber0, picodoomsdaymessenger.InputEventPound, picodoomsdaymessenger.InputEventFunction4, picodoomsdaymessenger.InputEventRight},
-		{picodoomsdaymessenger.InputEventOpenMainMenu, picodoomsdaymessenger.InputEventOpenMessages, picodoomsdaymessenger.InputEventOpenPeople, picodoomsdaymessenger.InputEventOpenSettings, picodoomsdaymessenger.InputEventAccept},
-	}
-
-	// Panic recovery
+	// Set up panic recovery
 	defer func() {
 		if err := recover(); err != nil {
 			// Communicate that an error happened.
@@ -120,7 +65,61 @@ func main() {
 		}
 	}()
 
-	// Main loop
+	// Setup the RGB LED array.
+	neopixelpin := machine.GP3
+	neopixelpin.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	leds := ws2812.New(neopixelpin)
+
+	// Clear the LED array.
+	err := displayLEDArray(&leds, [6]color.RGBA{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}})
+	if err != nil {
+		handleError(&display, &led, device, err)
+	}
+
+	// Store the last time that an LED animation frame was displayed.
+	lastAnimationFrame := time.Now()
+
+	// Store the last time that any of the buttons were pressed.
+	lastButtonPress := time.Now()
+
+	// Setup input reading. The columns are read and the rows are pulsed.
+	buttonsCol1 := machine.GP4
+	buttonsCol1.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsCol2 := machine.GP5
+	buttonsCol2.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsCol3 := machine.GP6
+	buttonsCol3.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsCol4 := machine.GP7
+	buttonsCol4.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+	buttonsCol5 := machine.GP8
+	buttonsCol5.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
+
+	buttonsRow1 := machine.GP16
+	buttonsRow1.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow1.Low()
+	buttonsRow2 := machine.GP17
+	buttonsRow2.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow2.Low()
+	buttonsRow3 := machine.GP20
+	buttonsRow3.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow3.Low()
+	buttonsRow4 := machine.SPI0_SDO_PIN
+	buttonsRow4.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow4.Low()
+	buttonsRow5 := machine.GP22
+	buttonsRow5.Configure(machine.PinConfig{Mode: machine.PinOutput})
+	buttonsRow5.Low()
+
+	// Define the locations of the buttons in the button array.
+	buttons := [5][5]picodoomsdaymessenger.InputEvent{
+		{picodoomsdaymessenger.InputEventNumber1, picodoomsdaymessenger.InputEventNumber2, picodoomsdaymessenger.InputEventNumber3, picodoomsdaymessenger.InputEventFunction1, picodoomsdaymessenger.InputEventUp},
+		{picodoomsdaymessenger.InputEventNumber4, picodoomsdaymessenger.InputEventNumber5, picodoomsdaymessenger.InputEventNumber6, picodoomsdaymessenger.InputEventFunction2, picodoomsdaymessenger.InputEventDown},
+		{picodoomsdaymessenger.InputEventNumber7, picodoomsdaymessenger.InputEventNumber8, picodoomsdaymessenger.InputEventNumber9, picodoomsdaymessenger.InputEventFunction3, picodoomsdaymessenger.InputEventLeft},
+		{picodoomsdaymessenger.InputEventStar, picodoomsdaymessenger.InputEventNumber0, picodoomsdaymessenger.InputEventPound, picodoomsdaymessenger.InputEventFunction4, picodoomsdaymessenger.InputEventRight},
+		{picodoomsdaymessenger.InputEventOpenMainMenu, picodoomsdaymessenger.InputEventOpenMessages, picodoomsdaymessenger.InputEventOpenPeople, picodoomsdaymessenger.InputEventOpenSettings, picodoomsdaymessenger.InputEventAccept},
+	}
+
+	// Main program loop.
 	for {
 		// Check the input if it has been long enough since the last button press.
 		if lastButtonPress.Add(100 * time.Millisecond).Before(time.Now()) {
@@ -180,7 +179,8 @@ func main() {
 			}
 			buttonsRow5.Low()
 		}
-		// Update the display if the state changes
+
+		// Update the display if the state has changed.
 		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
 			oldDeviceState = *device.State
 			oldDeviceHighlightedItem = device.State.HighlightedItem
@@ -208,11 +208,13 @@ func main() {
 	}
 }
 
+// displayLEDArray displays the given RGBA color array on the LEDs.
 func displayLEDArray(leds *ws2812.Device, ledlist [6]color.RGBA) error {
 	err := leds.WriteColors(ledlist[:])
 	return err
 }
 
+// checkInputCols checks the input columns for a button press.
 func checkInputCols(buttonsCol1, buttonsCol2, buttonsCol3, buttonsCol4, buttonsCol5 *machine.Pin) int {
 	if buttonsCol1.Get() {
 		return 1
