@@ -555,34 +555,10 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 				d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index+1]
 			}
 		}
-	case InputEventLeft:
-		{
-
-		}
-	case InputEventRight:
-		{
-
-		}
 	case InputEventAccept:
 		{
 			err = d.State.HighlightedItem.Action(d)
 			return err
-		}
-	case InputEventFunction1:
-		{
-
-		}
-	case InputEventFunction2:
-		{
-
-		}
-	case InputEventFunction3:
-		{
-
-		}
-	case InputEventFunction4:
-		{
-
 		}
 	case InputEventOpenSettings:
 		{
@@ -603,42 +579,6 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 		{
 			err = d.ChangeStateWithHistory(&StateMainMenu)
 			return err
-		}
-	case InputEventNumber1:
-		{
-		}
-	case InputEventNumber2:
-		{
-		}
-	case InputEventNumber3:
-		{
-		}
-	case InputEventNumber4:
-		{
-		}
-	case InputEventNumber5:
-		{
-		}
-	case InputEventNumber6:
-		{
-		}
-	case InputEventNumber7:
-		{
-		}
-	case InputEventNumber8:
-		{
-		}
-	case InputEventNumber9:
-		{
-		}
-	case InputEventNumber0:
-		{
-		}
-	case InputEventStar:
-		{
-		}
-	case InputEventPound:
-		{
 		}
 	}
 	return nil
