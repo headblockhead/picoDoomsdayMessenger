@@ -483,10 +483,7 @@ func (d *Device) ChangeLEDAnimationWithContinue(newAnimation *LEDAnimation) (err
 func (d *Device) ChangeStateWithHistory(newState *State) (err error) {
 	d.StateHistory = append(d.StateHistory, newState)
 	err = d.ChangeStateWithoutHistory(newState)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // ChangeStateWithoutHistory will take in a State and update the Device.
@@ -494,24 +491,18 @@ func (d *Device) ChangeStateWithoutHistory(newState *State) (err error) {
 	d.State = newState
 	if d.State.LoadAction != nil {
 		err = d.State.LoadAction(d)
-		if err != nil {
-			return err
-		}
 	}
-	return nil
+	return err
 }
 
 // GoBackState will use the StateHistory to return to the upwards state in the tree.
 func (d *Device) GoBackState() (err error) {
-	if len(d.StateHistory) < 1 {
+	if len(d.StateHistory) <= 1 {
 		return errors.New("already at root state")
 	}
 	err = d.ChangeStateWithoutHistory(d.StateHistory[len(d.StateHistory)-2])
-	if err != nil {
-		return err
-	}
 	d.StateHistory = d.StateHistory[0 : len(d.StateHistory)-1]
-	return nil
+	return err
 }
 
 // InputEvent is a string that represents a button press.
