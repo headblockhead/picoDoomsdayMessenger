@@ -2,6 +2,10 @@ package picodoomsdaymessenger
 
 import (
 	"errors"
+	"image"
+	"image/color"
+	"image/draw"
+	"reflect"
 	"testing"
 )
 
@@ -289,5 +293,80 @@ func TestProcessInputEventOpenMainMenu(t *testing.T) {
 	}
 	if device.State != &StateMainMenu {
 		t.Errorf("The state should be StateMainMenu but is %v", device.State)
+	}
+}
+
+func TestDrawHLine(t *testing.T) {
+	// Create a new RGB Image
+	img0 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	drawHLine(img0, 1, 1, 3)
+	img1 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	img1.Set(1, 1, color.RGBA{255, 255, 255, 255})
+	img1.Set(2, 1, color.RGBA{255, 255, 255, 255})
+	img1.Set(3, 1, color.RGBA{255, 255, 255, 255})
+	if !reflect.DeepEqual(img0, img1) {
+		t.Errorf("The images should be equal but are not")
+	}
+}
+
+func TestDrawHLineCol(t *testing.T) {
+	// Create a new RGB Image
+	img0 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	drawHLineCol(img0, 1, 1, 3, color.RGBA{1, 2, 3, 255})
+	img1 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	img1.Set(1, 1, color.RGBA{1, 2, 3, 255})
+	img1.Set(2, 1, color.RGBA{1, 2, 3, 255})
+	img1.Set(3, 1, color.RGBA{1, 2, 3, 255})
+	if !reflect.DeepEqual(img0, img1) {
+		t.Errorf("The images should be equal but are not")
+	}
+}
+
+func TestDrawVLine(t *testing.T) {
+	// Create a new RGB Image
+	img0 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	drawVLine(img0, 1, 1, 3)
+	img1 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	img1.Set(1, 1, color.RGBA{255, 255, 255, 255})
+	img1.Set(1, 2, color.RGBA{255, 255, 255, 255})
+	img1.Set(1, 3, color.RGBA{255, 255, 255, 255})
+	if !reflect.DeepEqual(img0, img1) {
+		t.Errorf("The images should be equal but are not")
+	}
+}
+func TestDrawVLineCol(t *testing.T) {
+	// Create a new RGB Image
+	img0 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	drawVLineCol(img0, 1, 1, 3, color.RGBA{1, 2, 3, 255})
+	img1 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	img1.Set(1, 1, color.RGBA{1, 2, 3, 255})
+	img1.Set(1, 2, color.RGBA{1, 2, 3, 255})
+	img1.Set(1, 3, color.RGBA{1, 2, 3, 255})
+	if !reflect.DeepEqual(img0, img1) {
+		t.Errorf("The images should be equal but are not")
+	}
+}
+
+func TestDrawBlackFilledBox(t *testing.T) {
+	// Create a new RGB Image
+	img0 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	// Fill the image with white
+	draw.Draw(img0, img0.Bounds(), &image.Uniform{color.RGBA{255, 255, 255, 255}}, image.ZP, draw.Src)
+	// Fill the middle with black
+	drawBlackFilledBox(img0, 1, 1, 3, 3)
+
+	// Create a second RGB Image
+	img1 := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	// Fill the image with white
+	draw.Draw(img1, img1.Bounds(), &image.Uniform{color.RGBA{255, 255, 255, 255}}, image.ZP, draw.Src)
+	// Fill the middle with black
+	for x := 1; x <= 3; x++ {
+		for y := 1; y <= 3; y++ {
+			img1.Set(x, y, color.RGBA{0, 0, 0, 255})
+		}
+	}
+
+	if !reflect.DeepEqual(img0, img1) {
+		t.Errorf("The images should be equal but are not")
 	}
 }

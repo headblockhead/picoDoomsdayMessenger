@@ -653,9 +653,7 @@ func drawText(img *image.RGBA, x, y int, text string) {
 // drawHLine draws a white horizontal line from one X location to another. x2 has to be greater than x1.
 func drawHLine(img *image.RGBA, x1 int, y int, x2 int) {
 	col := color.RGBA{255, 255, 255, 255}
-	for ; x1 <= x2; x1++ {
-		img.Set(x1, y, col)
-	}
+	drawHLineCol(img, x1, y, x2, col)
 }
 
 // drawHLineCol draws a horizontal line in a color of your choice from one X location to another. x2 has to be greater than x1.
@@ -668,6 +666,11 @@ func drawHLineCol(img *image.RGBA, x1 int, y int, x2 int, col color.RGBA) {
 // drawVLine draws a verticle line from one Y location to another. y2 has to be greater than y1.
 func drawVLine(img *image.RGBA, y1 int, x int, y2 int) {
 	col := color.RGBA{255, 255, 255, 255}
+	drawVLineCol(img, y1, x, y2, col)
+}
+
+// drawVLineCol draws a vertical line in a color of your choice from one Y location to another. y2 has to be greater than y1.
+func drawVLineCol(img *image.RGBA, y1 int, x int, y2 int, col color.RGBA) {
 	for ; y1 <= y2; y1++ {
 		img.Set(x, y1, col)
 	}
