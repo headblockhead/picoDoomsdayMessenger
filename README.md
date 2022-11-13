@@ -5,6 +5,9 @@
 # picoDoomsdayMessenger
 A device made using an RP2040 that sends messages over LoRaWAN.
 
+## Progress tracking
+[The current progress of the project can be found here](https://github.com/headblockhead/picoDoomsdayMessenger/projects)
+
 ## Hardware Used
 * [A Challenger RP2040 LoRa - 868MHz](https://thepihut.com/products/challenger-rp2040-lora-868mhz)
 * [A LoRa Antenna with Pigtail - 868MHz Black](https://thepihut.com/products/lora-antenna-with-pigtail-868mhz-black)
