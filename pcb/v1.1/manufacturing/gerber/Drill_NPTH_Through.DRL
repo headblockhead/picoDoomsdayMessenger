@@ -1,0 +1,16 @@
+M48
+METRIC,LZ,000.000
+;FILE_FORMAT=3:3
+;TYPE=NON_PLATED
+;Layer: NPTH_Through
+;EasyEDA v6.5.22, 2022-11-13 20:11:36
+;637256469d5b4e0fbaa5dacb6fe29907,a2731e2ff01b41edbee4f831c5fec297,10
+;Gerber Generator version 0.2
+;Holesize 1 = 6.200 mm
+T01C6.200
+%
+G05
+G90
+T01
+X069850Y109093
+M30

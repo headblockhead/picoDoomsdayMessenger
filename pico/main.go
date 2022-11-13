@@ -22,8 +22,8 @@ func main() {
 	// Setup the display
 	machine.I2C0.Configure(machine.I2CConfig{
 		Frequency: machine.TWI_FREQ_400KHZ,
-		SDA:       machine.GP0,
-		SCL:       machine.GP1,
+		SDA:       machine.GPIO0,
+		SCL:       machine.GPIO1,
 	})
 	display := ssd1306.NewI2C(machine.I2C0)
 	display.Configure(ssd1306.Config{
@@ -66,7 +66,7 @@ func main() {
 	}()
 
 	// Setup the RGB LED array.
-	neopixelpin := machine.GP3
+	neopixelpin := machine.D6
 	neopixelpin.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	leds := ws2812.New(neopixelpin)
 
@@ -83,30 +83,30 @@ func main() {
 	lastButtonPress := time.Now()
 
 	// Setup input reading. The columns are read and the rows are pulsed.
-	buttonsCol1 := machine.GP4
+	buttonsCol1 := machine.D9
 	buttonsCol1.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsCol2 := machine.GP5
+	buttonsCol2 := machine.D10
 	buttonsCol2.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsCol3 := machine.GP6
+	buttonsCol3 := machine.D11
 	buttonsCol3.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsCol4 := machine.GP7
+	buttonsCol4 := machine.D12
 	buttonsCol4.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
-	buttonsCol5 := machine.GP8
+	buttonsCol5 := machine.D13
 	buttonsCol5.Configure(machine.PinConfig{Mode: machine.PinInputPulldown})
 
-	buttonsRow1 := machine.GP16
+	buttonsRow1 := machine.GPIO16
 	buttonsRow1.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	buttonsRow1.Low()
-	buttonsRow2 := machine.GP17
+	buttonsRow2 := machine.GPIO17
 	buttonsRow2.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	buttonsRow2.Low()
-	buttonsRow3 := machine.GP20
+	buttonsRow3 := machine.GPIO20
 	buttonsRow3.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	buttonsRow3.Low()
-	buttonsRow4 := machine.SPI0_SDO_PIN
+	buttonsRow4 := machine.GPIO23
 	buttonsRow4.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	buttonsRow4.Low()
-	buttonsRow5 := machine.GP22
+	buttonsRow5 := machine.GPIO22
 	buttonsRow5.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	buttonsRow5.Low()
 
