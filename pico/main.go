@@ -119,10 +119,16 @@ func main() {
 		{picodoomsdaymessenger.InputEventOpenMainMenu, picodoomsdaymessenger.InputEventOpenMessages, picodoomsdaymessenger.InputEventOpenPeople, picodoomsdaymessenger.InputEventOpenSettings, picodoomsdaymessenger.InputEventAccept},
 	}
 
+	asdf := device.NewConversation()
+	asdf.Name = "Yo"
+	asdf.Messages = []picodoomsdaymessenger.Message{{Text: "Hello", TimeSent: time.Now(), TimeRecieved: time.Now(), Index: 1}, {Text: "World", TimeSent: time.Now(), TimeRecieved: time.Now(), Index: 2}}
+	asdf.HighlightedMessage = &asdf.Messages[len(asdf.Messages)-1]
+	device.UpdateMessagesMenu()
+
 	// Main program loop.
 	for {
 		// Check the input if it has been long enough since the last button press.
-		if lastButtonPress.Add(100 * time.Millisecond).Before(time.Now()) {
+		if lastButtonPress.Add(200 * time.Millisecond).Before(time.Now()) {
 			buttonsRow1.High()
 			col := checkInputCols(&buttonsCol1, &buttonsCol2, &buttonsCol3, &buttonsCol4, &buttonsCol5)
 			if col != 0 {

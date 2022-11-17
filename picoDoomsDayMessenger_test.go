@@ -179,6 +179,26 @@ func TestProcessInputEventUp(t *testing.T) {
 	if device.State.HighlightedItem.Text != "test1" {
 		t.Errorf("The highlighted item should be menuItem1 but is %v", device.State.HighlightedItem)
 	}
+
+	device.State = &StateConversationReader
+	device.Conversations = []*Conversation{{Messages: []Message{{Text: "test0", Index: 0}, {Text: "test1", Index: 1}}}}
+	device.CurrentConversation = device.Conversations[0]
+	device.CurrentConversation.HighlightedMessage = &device.CurrentConversation.Messages[1]
+	err = device.ProcessInputEvent(InputEventUp)
+	if err != nil {
+		t.Errorf("The error should be nil but is %s", err)
+	}
+	if device.CurrentConversation.HighlightedMessage.Text != "test0" {
+		t.Errorf("The highlighted message should be test0 but is %v", device.CurrentConversation.HighlightedMessage.Text)
+	}
+	device.CurrentConversation.HighlightedMessage = &device.CurrentConversation.Messages[0]
+	err = device.ProcessInputEvent(InputEventUp)
+	if err != nil {
+		t.Errorf("The error should be nil but is %s", err)
+	}
+	if device.CurrentConversation.HighlightedMessage.Text != "test1" {
+		t.Errorf("The highlighted message should be test1 but is %v", device.CurrentConversation.HighlightedMessage.Text)
+	}
 }
 
 func TestProcessInputEventDown(t *testing.T) {
@@ -207,6 +227,26 @@ func TestProcessInputEventDown(t *testing.T) {
 	}
 	if device.State.HighlightedItem.Text != "test0" {
 		t.Errorf("The highlighted item should be menuItem0 but is %v", device.State.HighlightedItem)
+	}
+
+	device.State = &StateConversationReader
+	device.Conversations = []*Conversation{{Messages: []Message{{Text: "test0", Index: 0}, {Text: "test1", Index: 1}}}}
+	device.CurrentConversation = device.Conversations[0]
+	device.CurrentConversation.HighlightedMessage = &device.CurrentConversation.Messages[0]
+	err = device.ProcessInputEvent(InputEventDown)
+	if err != nil {
+		t.Errorf("The error should be nil but is %s", err)
+	}
+	if device.CurrentConversation.HighlightedMessage.Text != "test1" {
+		t.Errorf("The highlighted message should be test1 but is %v", device.CurrentConversation.HighlightedMessage.Text)
+	}
+	device.CurrentConversation.HighlightedMessage = &device.CurrentConversation.Messages[1]
+	err = device.ProcessInputEvent(InputEventDown)
+	if err != nil {
+		t.Errorf("The error should be nil but is %s", err)
+	}
+	if device.CurrentConversation.HighlightedMessage.Text != "test0" {
+		t.Errorf("The highlighted message should be test0 but is %v", device.CurrentConversation.HighlightedMessage.Text)
 	}
 }
 
@@ -368,5 +408,61 @@ func TestDrawBlackFilledBox(t *testing.T) {
 
 	if !reflect.DeepEqual(img0, img1) {
 		t.Errorf("The images should be equal but are not")
+	}
+}
+
+func TestNewConversation(t *testing.T) {
+	// Create a new Machine
+	device := NewDevice()
+	newConversation := device.NewConversation()
+	if len(device.Conversations) != 1 {
+		t.Errorf("Conversations list length is incorrect, have: %d want: 1", len(device.Conversations))
+	}
+	if device.Conversations[0] != newConversation {
+		t.Errorf("The returned conversation is not equal to the one contained in the device's conversation list, have: %v want: %v", newConversation, device.Conversations[0])
+	}
+}
+
+func TestUpdateMessagesMenu(t *testing.T) {
+	// Create a new Machine
+	device := NewDevice()
+	testConversation1 := &Conversation{Name: "Test1"}
+	testConversation2 := &Conversation{Name: "Test2"}
+	testConversation3 := &Conversation{Name: "Test3"}
+	device.Conversations = []*Conversation{testConversation1, testConversation2}
+	device.UpdateMessagesMenu()
+	if StateMessagesMenu.Content[1].Text != "Test1" {
+		t.Errorf("Content of MessagesMenu item 1 is not correct, have: %v want: %v", StateMessagesMenu.Content[1].Text, "TestPerson1")
+	}
+	if StateMessagesMenu.Content[2].Text != "Test2" {
+		t.Errorf("Content of MessagesMenu item 2 is not correct, have: %v want: %v", StateMessagesMenu.Content[2].Text, "TestPerson2")
+	}
+	err := StateMessagesMenu.Content[1].Action(device)
+	if err != nil {
+		t.Errorf("There was an unexpected error testing the Message Action, err: %s", err)
+	}
+	if device.CurrentConversation != testConversation1 {
+		t.Errorf("The CurrentConversation is not the conversation of the ran action, have: %v want: %v", device.CurrentConversation, testConversation1)
+	}
+	if device.State != &StateConversationReader {
+		t.Errorf("The current State is not the ConversationReader, have %v want: %v", device.State, &StateConversationReader)
+	}
+	if len(device.StateHistory) != 2 {
+		t.Errorf("The length of the StateHistory is not 2, have: %d want: %d", len(device.StateHistory), 2)
+	}
+	err = StateMessagesMenu.Content[2].Action(device)
+	if err != nil {
+		t.Errorf("There was an unexpected error testing the Message Action, err: %s", err)
+	}
+	if device.CurrentConversation != testConversation2 {
+		t.Errorf("The CurrentConversation is not the conversation of the ran action, have: %v want: %v", device.CurrentConversation, testConversation2)
+	}
+	if len(device.StateHistory) != 3 {
+		t.Errorf("The length of the StateHistory is not 3, have: %d want: %d", len(device.StateHistory), 3)
+	}
+	device.Conversations = []*Conversation{testConversation3}
+	device.UpdateMessagesMenu()
+	if len(StateMessagesMenu.Content) != 2 {
+		t.Errorf("The length of the StateMessagesMenu Content is not 2, have: %d want: %d", len(StateMessagesMenu.Content), 2)
 	}
 }

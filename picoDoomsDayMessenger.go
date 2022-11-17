@@ -13,9 +13,34 @@ import (
 
 // Device is the main structure that holds all the information about the device. It has a State, a StateHistory, and an LEDAnimation.
 type Device struct {
-	State        *State
-	StateHistory []*State
-	LEDAnimation *LEDAnimation
+	State               *State
+	StateHistory        []*State
+	LEDAnimation        *LEDAnimation
+	Conversations       []*Conversation
+	CurrentConversation *Conversation
+	SelfIdentity        *Person
+}
+
+// Conversation is a conversation with a person. It contains a list of Messages and a Person that the conversation is with.
+type Conversation struct {
+	Messages           []Message
+	HighlightedMessage *Message
+	Name               string
+}
+
+// Person is a representation of another device. A Person has a name and a unique identifier
+type Person struct {
+	Name string
+	ID   uint32
+}
+
+// Message is a message sent inside a Conversation. It contains the time it was sent, the time it was recieved and the content of the message.
+type Message struct {
+	TimeSent     time.Time
+	TimeRecieved time.Time
+	Text         string
+	Index        int
+	Person       Person
 }
 
 // State is the current state of the device. It contains all the information about what is currently being displayed.
@@ -31,12 +56,12 @@ type MenuItem struct {
 	Text          string
 	Action        func(d *Device) (err error)
 	Index         int
-	GetCursorData func(d *Device) (data interface{}, err error)
+	GetCursorData func(d *Device) (data any, err error)
 	CursorIcon    CursorIcon
 }
 
 // CursorIcon is a function that draws a cursor icon based on the data at a location.
-type CursorIcon func(img *image.RGBA, x int, y int, data interface{}) (err error)
+type CursorIcon func(img *image.RGBA, x int, y int, data any) (err error)
 
 // LEDAnimation is a structure that holds information about an LED animation.
 type LEDAnimation struct {
@@ -45,10 +70,13 @@ type LEDAnimation struct {
 	Frames        [][6]color.RGBA
 }
 
+// Define default People
+var PersonDefault = Person{"You", 0}
+
 // Define Cursors
 var (
 	// CursorIconRightArrow is a cursor that is a right arrow. It does not need any data.
-	CursorIconRightArrow = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+	CursorIconRightArrow = func(img *image.RGBA, x int, y int, data any) (err error) {
 		col := color.RGBA{255, 255, 255, 255}
 		img.Set(x+0, y+0, col)
 		img.Set(x+1, y+1, col)
@@ -60,7 +88,7 @@ var (
 		return nil
 	}
 	// CursorIconLeftArrow is a cursor that is a left arrow. It does not need any data.
-	CursorIconLeftArrow = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+	CursorIconLeftArrow = func(img *image.RGBA, x int, y int, data any) (err error) {
 		col := color.RGBA{255, 255, 255, 255}
 		img.Set(x+6, y+0, col)
 		img.Set(x+5, y+1, col)
@@ -72,7 +100,7 @@ var (
 		return nil
 	}
 	// CursorIconBox is a cursor that is a box. It takes in a bool as data. If the bool is true, the box will be filled in. If the bool is false, the box will be empty.
-	CursorIconBox = func(img *image.RGBA, x int, y int, data interface{}) (err error) {
+	CursorIconBox = func(img *image.RGBA, x int, y int, data any) (err error) {
 		isChecked, ok := data.(bool)
 		if !ok {
 			return errors.New("data is not a bool")
@@ -104,9 +132,8 @@ var (
 		Action: func(d *Device) (err error) {
 			return errors.New("default menu item action")
 		},
-		Index:         0,
-		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
-		CursorIcon:    CursorIconRightArrow,
+		Index:      0,
+		CursorIcon: CursorIconRightArrow,
 	}
 
 	// Global Menu Items
@@ -121,9 +148,8 @@ var (
 			}
 			return nil
 		},
-		Index:         0,
-		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
-		CursorIcon:    CursorIconLeftArrow,
+		Index:      0,
+		CursorIcon: CursorIconLeftArrow,
 	}
 
 	// Main Menu Items
@@ -138,9 +164,8 @@ var (
 			}
 			return nil
 		},
-		Index:         0,
-		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
-		CursorIcon:    CursorIconRightArrow,
+		Index:      0,
+		CursorIcon: CursorIconRightArrow,
 	}
 
 	// MainMenuItemPeople is a MenuItem that goes to the People menu.
@@ -153,9 +178,8 @@ var (
 			}
 			return nil
 		},
-		Index:         1,
-		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
-		CursorIcon:    CursorIconRightArrow,
+		Index:      1,
+		CursorIcon: CursorIconRightArrow,
 	}
 
 	// MainMenuItemGames is a MenuItem that goes to the Games menu.
@@ -168,9 +192,8 @@ var (
 			}
 			return nil
 		},
-		Index:         2,
-		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
-		CursorIcon:    CursorIconRightArrow,
+		Index:      2,
+		CursorIcon: CursorIconRightArrow,
 	}
 
 	// MainMenuItemDemos is a MenuItem that goes to the Demos menu.
@@ -183,9 +206,8 @@ var (
 			}
 			return nil
 		},
-		Index:         3,
-		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
-		CursorIcon:    CursorIconRightArrow,
+		Index:      3,
+		CursorIcon: CursorIconRightArrow,
 	}
 
 	// MainMenuItemTools is a MenuItem that goes to the Tools menu.
@@ -198,9 +220,8 @@ var (
 			}
 			return nil
 		},
-		Index:         4,
-		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
-		CursorIcon:    CursorIconRightArrow,
+		Index:      4,
+		CursorIcon: CursorIconRightArrow,
 	}
 
 	// MainMenuItemSettings is a MenuItem that goes to the Settings menu.
@@ -213,9 +234,8 @@ var (
 			}
 			return nil
 		},
-		Index:         5,
-		GetCursorData: func(d *Device) (data interface{}, err error) { return nil, nil },
-		CursorIcon:    CursorIconRightArrow,
+		Index:      5,
+		CursorIcon: CursorIconRightArrow,
 	}
 
 	// Games Menu Items
@@ -240,7 +260,7 @@ var (
 			return nil
 		},
 		Index: 1,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
+		GetCursorData: func(d *Device) (data any, err error) {
 			return d.LEDAnimation == &LEDAnimationDemo, nil
 		},
 		CursorIcon: CursorIconBox,
@@ -266,7 +286,7 @@ var (
 			return nil
 		},
 		Index: 1,
-		GetCursorData: func(d *Device) (data interface{}, err error) {
+		GetCursorData: func(d *Device) (data any, err error) {
 			return d.LEDAnimation == &LEDAnimationSOS, nil
 		},
 		CursorIcon: CursorIconBox,
@@ -281,6 +301,11 @@ var (
 		Content:         []MenuItem{MenuItemDefault},
 		HighlightedItem: &MenuItemDefault,
 	}
+	// StateConversationReader is a special State that is used when reading a Conversation.
+	StateConversationReader = State{
+		Title:   "",
+		Content: []MenuItem{},
+	}
 	// StateMainMenu is a State that shows the main menu.
 	StateMainMenu = State{
 		Title:           "Main Menu",
@@ -293,6 +318,8 @@ var (
 		Content:         []MenuItem{GlobalMenuItemGoBack},
 		HighlightedItem: &GlobalMenuItemGoBack,
 	}
+	// StateMessagesMenuOld is a copy of StateMessagesMenu that can be used as a starting point to reset StateMessagesMenu.
+	StateMessagesMenuOld = StateMessagesMenu
 	// StatePeopleMenu is a State that shows the people menu.
 	StatePeopleMenu = State{
 		Title:           "People",
@@ -462,8 +489,32 @@ var (
 
 // NewDevice returns a new Device with default parameters.
 func NewDevice() (d *Device) {
-	newDevice := &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault}
-	return newDevice
+	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault}
+}
+
+// NewConversation creates a blank new Conversation and adds it to the Device. It also returns a pointer to that Conversation.
+func (d *Device) NewConversation() (c *Conversation) {
+	newConversation := &Conversation{}
+	d.Conversations = append(d.Conversations, newConversation)
+	return newConversation
+}
+
+func (d *Device) UpdateMessagesMenu() {
+	StateMessagesMenu = StateMessagesMenuOld
+	for i := 0; i < len(d.Conversations); i++ {
+		// Define a seperate variable to seperate the increasing i from the functions defined here.
+		j := i
+		StateMessagesMenu.Content = append(StateMessagesMenu.Content, MenuItem{
+			Text: d.Conversations[j].Name,
+			Action: func(d *Device) (err error) {
+				d.CurrentConversation = d.Conversations[j]
+				err = d.ChangeStateWithHistory(&StateConversationReader)
+				return err
+			},
+			Index:      j + 1,
+			CursorIcon: CursorIconRightArrow,
+		})
+	}
 }
 
 // ChangeLEDAnimationWithoutContinue changes the current LED animation of the device without continuing from the last time it was played.
@@ -541,24 +592,44 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 	switch inputEvent {
 	case InputEventUp:
 		{
-			if d.State.HighlightedItem.Index <= 0 {
-				d.State.HighlightedItem = &d.State.Content[len(d.State.Content)-1]
+			if d.State != &StateConversationReader {
+				if d.State.HighlightedItem.Index <= 0 {
+					d.State.HighlightedItem = &d.State.Content[len(d.State.Content)-1]
+				} else {
+					d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index-1]
+				}
 			} else {
-				d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index-1]
+				if d.CurrentConversation.HighlightedMessage.Index <= 0 {
+					d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[len(d.CurrentConversation.Messages)-1]
+				} else {
+					d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[d.CurrentConversation.HighlightedMessage.Index-1]
+				}
 			}
 		}
 	case InputEventDown:
 		{
-			if d.State.HighlightedItem.Index >= len(d.State.Content)-1 {
-				d.State.HighlightedItem = &d.State.Content[0]
+			if d.State != &StateConversationReader {
+				if d.State.HighlightedItem.Index >= len(d.State.Content)-1 {
+					d.State.HighlightedItem = &d.State.Content[0]
+				} else {
+					d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index+1]
+				}
 			} else {
-				d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index+1]
+				if d.CurrentConversation.HighlightedMessage.Index >= len(d.CurrentConversation.Messages)-1 {
+					d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[0]
+				} else {
+					d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[d.CurrentConversation.HighlightedMessage.Index+1]
+				}
 			}
 		}
 	case InputEventAccept:
 		{
-			err = d.State.HighlightedItem.Action(d)
-			return err
+			if d.State != &StateConversationReader {
+				err = d.State.HighlightedItem.Action(d)
+				return err
+			} else {
+				return errors.New("cannot accept in conversation reader")
+			}
 		}
 	case InputEventOpenSettings:
 		{
@@ -588,27 +659,62 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err error) {
 	img := image.NewRGBA(dimensions)
 
-	// Draw the content with the currently highlighted item in the middle of the screen and the other items above and below it.
-	for i := 0; i < len(d.State.Content); i++ {
-		if d.State.Content[i].Index == d.State.HighlightedItem.Index {
-			drawText(img, 0, 43, d.State.Content[i].Text)
-		} else if d.State.Content[i].Index < d.State.HighlightedItem.Index {
-			drawText(img, 0, 43-(d.State.HighlightedItem.Index-d.State.Content[i].Index)*12, d.State.Content[i].Text)
-		} else if d.State.Content[i].Index > d.State.HighlightedItem.Index {
-			drawText(img, 0, 43+(d.State.Content[i].Index-d.State.HighlightedItem.Index)*12, d.State.Content[i].Text)
+	if d.State != &StateConversationReader {
+		// Draw the content with the currently highlighted item in the middle of the screen and the other items above and below it.
+		for i := 0; i < len(d.State.Content); i++ {
+			if d.State.Content[i].Index == d.State.HighlightedItem.Index {
+				drawText(img, 0, 43, d.State.Content[i].Text)
+			} else if d.State.Content[i].Index < d.State.HighlightedItem.Index {
+				drawText(img, 0, 43-(d.State.HighlightedItem.Index-d.State.Content[i].Index)*12, d.State.Content[i].Text)
+			} else if d.State.Content[i].Index > d.State.HighlightedItem.Index {
+				drawText(img, 0, 43+(d.State.Content[i].Index-d.State.HighlightedItem.Index)*12, d.State.Content[i].Text)
+			}
 		}
-	}
 
-	// Draw the title.
-	drawBlackFilledBox(img, 0, 0, dimensions.Dx(), 16)
-	drawText(img, 0, 13, d.State.Title)
-	drawHLine(img, 0, 15, dimensions.Dx())
+		// Draw the title.
+		drawBlackFilledBox(img, 0, 0, dimensions.Dx(), 16)
+		drawText(img, 0, 13, d.State.Title)
+		drawHLine(img, 0, 15, dimensions.Dx())
 
-	// Draw the cursor. If the cursor is a checkbox, check if the checkbox is checked or not.
-	cursorData, err := d.State.HighlightedItem.GetCursorData(d)
-	err = d.State.HighlightedItem.CursorIcon(img, dimensions.Dx()-7, 36, cursorData)
-	if err != nil {
-		return nil, err
+		// Draw the cursor. If the cursor is a checkbox, check if the checkbox is checked or not.
+		var cursorData any
+		if d.State.HighlightedItem.GetCursorData != nil {
+			cursorData, err = d.State.HighlightedItem.GetCursorData(d)
+			if err != nil {
+				return nil, err
+			}
+		}
+		err = d.State.HighlightedItem.CursorIcon(img, dimensions.Dx()-7, 36, cursorData)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		drawBlackFilledBox(img, 0, 0, (dimensions.Dx()*75)/100, 16)
+		drawText(img, 0, 13, d.CurrentConversation.Name)
+		drawHLine(img, 0, 15, dimensions.Dx()*75)
+
+		// Draw the conversation with the most recent message at the bottom of the screen.
+		for i := 0; i < len(d.CurrentConversation.Messages); i++ {
+			if d.CurrentConversation.Messages[i].Index == d.CurrentConversation.HighlightedMessage.Index {
+				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
+					drawText(img, 0, 43, d.CurrentConversation.Messages[i].Text)
+				} else {
+					drawText(img, dimensions.Dx()-(len(d.CurrentConversation.Messages[i].Text)*7), 43, d.CurrentConversation.Messages[i].Text)
+				}
+			} else if d.CurrentConversation.Messages[i].Index < d.CurrentConversation.HighlightedMessage.Index {
+				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
+					drawText(img, 0, 43-(d.CurrentConversation.HighlightedMessage.Index-d.CurrentConversation.Messages[i].Index)*12, d.CurrentConversation.Messages[i].Text)
+				} else {
+					drawText(img, dimensions.Dx()-(len(d.CurrentConversation.Messages[i].Text)*7), 43-(d.CurrentConversation.HighlightedMessage.Index-d.CurrentConversation.Messages[i].Index)*12, d.CurrentConversation.Messages[i].Text)
+				}
+			} else if d.CurrentConversation.Messages[i].Index > d.CurrentConversation.HighlightedMessage.Index {
+				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
+					drawText(img, 0, 43+(d.CurrentConversation.Messages[i].Index-d.CurrentConversation.HighlightedMessage.Index)*12, d.CurrentConversation.Messages[i].Text)
+				} else {
+					drawText(img, dimensions.Dx()-(len(d.CurrentConversation.Messages[i].Text)*7), 43+(d.CurrentConversation.Messages[i].Index-d.CurrentConversation.HighlightedMessage.Index)*12, d.CurrentConversation.Messages[i].Text)
+				}
+			}
+		}
 	}
 
 	return img, nil
