@@ -259,6 +259,8 @@ func handleError(display *ssd1306.Device, led *machine.Pin, device *picodoomsday
 		flashLED(led, 2, 300)
 		return
 	}
+	// Sleep to give the user time to read the error
+	time.Sleep(2 * time.Second)
 }
 
 // displayImage takes in an image and writes it to the screen.
