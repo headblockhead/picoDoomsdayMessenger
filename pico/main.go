@@ -116,14 +116,18 @@ func main() {
 		{picodoomsdaymessenger.InputEventNumber4, picodoomsdaymessenger.InputEventNumber5, picodoomsdaymessenger.InputEventNumber6, picodoomsdaymessenger.InputEventFunction2, picodoomsdaymessenger.InputEventDown},
 		{picodoomsdaymessenger.InputEventNumber7, picodoomsdaymessenger.InputEventNumber8, picodoomsdaymessenger.InputEventNumber9, picodoomsdaymessenger.InputEventFunction3, picodoomsdaymessenger.InputEventLeft},
 		{picodoomsdaymessenger.InputEventStar, picodoomsdaymessenger.InputEventNumber0, picodoomsdaymessenger.InputEventPound, picodoomsdaymessenger.InputEventFunction4, picodoomsdaymessenger.InputEventRight},
-		{picodoomsdaymessenger.InputEventOpenMainMenu, picodoomsdaymessenger.InputEventOpenMessages, picodoomsdaymessenger.InputEventOpenPeople, picodoomsdaymessenger.InputEventOpenSettings, picodoomsdaymessenger.InputEventAccept},
+		{picodoomsdaymessenger.InputEventOpenMainMenu, picodoomsdaymessenger.InputEventOpenConversations, picodoomsdaymessenger.InputEventOpenPeople, picodoomsdaymessenger.InputEventOpenSettings, picodoomsdaymessenger.InputEventAccept},
 	}
 
 	asdf := device.NewConversation()
-	asdf.Name = "Yo"
+	asdf.Name = "Demo 1"
 	asdf.Messages = []picodoomsdaymessenger.Message{{Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "Hello", Index: 0}, {Person: picodoomsdaymessenger.PersonDefault, Text: "World", Index: 1}}
 	asdf.HighlightedMessage = &asdf.Messages[len(asdf.Messages)-1]
-	device.UpdateMessagesMenu()
+	asdf2 := device.NewConversation()
+	asdf2.Name = "Demo 2"
+	asdf2.Messages = []picodoomsdaymessenger.Message{{Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "this is a test message", Index: 0}, {Person: picodoomsdaymessenger.PersonDefault, Text: "ok thanks", Index: 1}, {Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "this is another test message", Index: 2}, {Person: picodoomsdaymessenger.PersonDefault, Text: "thanks again", Index: 3}}
+	asdf2.HighlightedMessage = &asdf2.Messages[len(asdf2.Messages)-1]
+	device.UpdateConversationsMenu()
 
 	// Main program loop.
 	for {

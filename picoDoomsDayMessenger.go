@@ -36,11 +36,9 @@ type Person struct {
 
 // Message is a message sent inside a Conversation. It contains the time it was sent, the time it was recieved and the content of the message.
 type Message struct {
-	TimeSent     time.Time
-	TimeRecieved time.Time
-	Text         string
-	Index        int
-	Person       Person
+	Text   string
+	Index  int
+	Person Person
 }
 
 // State is the current state of the device. It contains all the information about what is currently being displayed.
@@ -154,11 +152,11 @@ var (
 
 	// Main Menu Items
 
-	// MainMenuItemMessages is a MenuItem that goes to the Messages menu.
-	MainMenuItemMessages MenuItem = MenuItem{
-		Text: "Messages",
+	// MainMenuItemConversations is a MenuItem that goes to the StateConversations menu.
+	MainMenuItemConversations MenuItem = MenuItem{
+		Text: "Conversations",
 		Action: func(d *Device) (err error) {
-			err = d.ChangeStateWithHistory(&StateMessagesMenu)
+			err = d.ChangeStateWithHistory(&StateConversationsMenu)
 			if err != nil {
 				return err
 			}
@@ -309,17 +307,17 @@ var (
 	// StateMainMenu is a State that shows the main menu.
 	StateMainMenu = State{
 		Title:           "Main Menu",
-		Content:         []MenuItem{MainMenuItemMessages, MainMenuItemPeople, MainMenuItemGames, MainMenuItemDemos, MainMenuItemTools, MainMenuItemSettings},
-		HighlightedItem: &MainMenuItemMessages,
+		Content:         []MenuItem{MainMenuItemConversations, MainMenuItemPeople, MainMenuItemGames, MainMenuItemDemos, MainMenuItemTools, MainMenuItemSettings},
+		HighlightedItem: &MainMenuItemConversations,
 	}
-	// StateMessagesMenu is a State that shows the messages menu.
-	StateMessagesMenu = State{
-		Title:           "Messages",
+	// StateConversationsMenu is a State that shows the conversations menu.
+	StateConversationsMenu = State{
+		Title:           "Conversations",
 		Content:         []MenuItem{GlobalMenuItemGoBack},
 		HighlightedItem: &GlobalMenuItemGoBack,
 	}
-	// StateMessagesMenuOld is a copy of StateMessagesMenu that can be used as a starting point to reset StateMessagesMenu.
-	StateMessagesMenuOld = StateMessagesMenu
+	// StateConversationsMenuOld is a copy of StateConversationsMenu that can be used as a starting point to reset StateConversationsMenu.
+	StateConversationsMenuOld = StateConversationsMenu
 	// StatePeopleMenu is a State that shows the people menu.
 	StatePeopleMenu = State{
 		Title:           "People",
@@ -499,12 +497,12 @@ func (d *Device) NewConversation() (c *Conversation) {
 	return newConversation
 }
 
-func (d *Device) UpdateMessagesMenu() {
-	StateMessagesMenu = StateMessagesMenuOld
+func (d *Device) UpdateConversationsMenu() {
+	StateConversationsMenu = StateConversationsMenuOld
 	for i := 0; i < len(d.Conversations); i++ {
 		// Define a seperate variable to seperate the increasing i from the functions defined here.
 		j := i
-		StateMessagesMenu.Content = append(StateMessagesMenu.Content, MenuItem{
+		StateConversationsMenu.Content = append(StateConversationsMenu.Content, MenuItem{
 			Text: d.Conversations[j].Name,
 			Action: func(d *Device) (err error) {
 				d.CurrentConversation = d.Conversations[j]
@@ -560,31 +558,31 @@ func (d *Device) GoBackState() (err error) {
 type InputEvent string
 
 const (
-	InputEventUp           InputEvent = "up"
-	InputEventDown         InputEvent = "down"
-	InputEventLeft         InputEvent = "left"
-	InputEventRight        InputEvent = "right"
-	InputEventAccept       InputEvent = "accept"
-	InputEventFunction1    InputEvent = "function1"
-	InputEventFunction2    InputEvent = "function2"
-	InputEventFunction3    InputEvent = "function3"
-	InputEventFunction4    InputEvent = "function4"
-	InputEventOpenSettings InputEvent = "openSettings"
-	InputEventOpenPeople   InputEvent = "openPeople"
-	InputEventOpenMessages InputEvent = "openMessages"
-	InputEventOpenMainMenu InputEvent = "openMainMenu"
-	InputEventNumber1      InputEvent = "number1"
-	InputEventNumber2      InputEvent = "number2"
-	InputEventNumber3      InputEvent = "number3"
-	InputEventNumber4      InputEvent = "number4"
-	InputEventNumber5      InputEvent = "number5"
-	InputEventNumber6      InputEvent = "number6"
-	InputEventNumber7      InputEvent = "number7"
-	InputEventNumber8      InputEvent = "number8"
-	InputEventNumber9      InputEvent = "number9"
-	InputEventNumber0      InputEvent = "number0"
-	InputEventStar         InputEvent = "star"
-	InputEventPound        InputEvent = "pound"
+	InputEventUp                InputEvent = "up"
+	InputEventDown              InputEvent = "down"
+	InputEventLeft              InputEvent = "left"
+	InputEventRight             InputEvent = "right"
+	InputEventAccept            InputEvent = "accept"
+	InputEventFunction1         InputEvent = "function1"
+	InputEventFunction2         InputEvent = "function2"
+	InputEventFunction3         InputEvent = "function3"
+	InputEventFunction4         InputEvent = "function4"
+	InputEventOpenSettings      InputEvent = "openSettings"
+	InputEventOpenPeople        InputEvent = "openPeople"
+	InputEventOpenConversations InputEvent = "openConversations"
+	InputEventOpenMainMenu      InputEvent = "openMainMenu"
+	InputEventNumber1           InputEvent = "number1"
+	InputEventNumber2           InputEvent = "number2"
+	InputEventNumber3           InputEvent = "number3"
+	InputEventNumber4           InputEvent = "number4"
+	InputEventNumber5           InputEvent = "number5"
+	InputEventNumber6           InputEvent = "number6"
+	InputEventNumber7           InputEvent = "number7"
+	InputEventNumber8           InputEvent = "number8"
+	InputEventNumber9           InputEvent = "number9"
+	InputEventNumber0           InputEvent = "number0"
+	InputEventStar              InputEvent = "star"
+	InputEventPound             InputEvent = "pound"
 )
 
 // ProcessInputEvent will take in an InputEvent and run appropriate actions based on the event.
@@ -641,9 +639,9 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 			err = d.ChangeStateWithHistory(&StatePeopleMenu)
 			return err
 		}
-	case InputEventOpenMessages:
+	case InputEventOpenConversations:
 		{
-			err = d.ChangeStateWithHistory(&StateMessagesMenu)
+			err = d.ChangeStateWithHistory(&StateConversationsMenu)
 			return err
 		}
 	case InputEventOpenMainMenu:
@@ -689,32 +687,33 @@ func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err err
 			return nil, err
 		}
 	} else {
-		drawBlackFilledBox(img, 0, 0, (dimensions.Dx()*75)/100, 16)
-		drawText(img, 0, 13, d.CurrentConversation.Name)
-		drawHLine(img, 0, 15, dimensions.Dx()*75)
-
 		// Draw the conversation with the most recent message at the bottom of the screen.
 		for i := 0; i < len(d.CurrentConversation.Messages); i++ {
 			if d.CurrentConversation.Messages[i].Index == d.CurrentConversation.HighlightedMessage.Index {
 				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
-					drawText(img, 0, 43, d.CurrentConversation.Messages[i].Text)
+					drawText(img, 0, 43, "> "+d.CurrentConversation.Messages[i].Text)
 				} else {
-					drawText(img, dimensions.Dx()-(len(d.CurrentConversation.Messages[i].Text)*7), 43, d.CurrentConversation.Messages[i].Text)
+					drawText(img, dimensions.Dx()-((len(d.CurrentConversation.Messages[i].Text)+2)*7), 43, d.CurrentConversation.Messages[i].Text+" <")
 				}
 			} else if d.CurrentConversation.Messages[i].Index < d.CurrentConversation.HighlightedMessage.Index {
 				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
-					drawText(img, 0, 43-(d.CurrentConversation.HighlightedMessage.Index-d.CurrentConversation.Messages[i].Index)*12, d.CurrentConversation.Messages[i].Text)
+					drawText(img, 0, 43-(d.CurrentConversation.HighlightedMessage.Index-d.CurrentConversation.Messages[i].Index)*12, "> "+d.CurrentConversation.Messages[i].Text)
 				} else {
-					drawText(img, dimensions.Dx()-(len(d.CurrentConversation.Messages[i].Text)*7), 43-(d.CurrentConversation.HighlightedMessage.Index-d.CurrentConversation.Messages[i].Index)*12, d.CurrentConversation.Messages[i].Text)
+					drawText(img, dimensions.Dx()-((len(d.CurrentConversation.Messages[i].Text)+2)*7), 43-(d.CurrentConversation.HighlightedMessage.Index-d.CurrentConversation.Messages[i].Index)*12, d.CurrentConversation.Messages[i].Text+" <")
 				}
 			} else if d.CurrentConversation.Messages[i].Index > d.CurrentConversation.HighlightedMessage.Index {
 				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
-					drawText(img, 0, 43+(d.CurrentConversation.Messages[i].Index-d.CurrentConversation.HighlightedMessage.Index)*12, d.CurrentConversation.Messages[i].Text)
+					drawText(img, 0, 43+(d.CurrentConversation.Messages[i].Index-d.CurrentConversation.HighlightedMessage.Index)*12, "> "+d.CurrentConversation.Messages[i].Text)
 				} else {
-					drawText(img, dimensions.Dx()-(len(d.CurrentConversation.Messages[i].Text)*7), 43+(d.CurrentConversation.Messages[i].Index-d.CurrentConversation.HighlightedMessage.Index)*12, d.CurrentConversation.Messages[i].Text)
+					drawText(img, dimensions.Dx()-((len(d.CurrentConversation.Messages[i].Text)+2)*7), 43+(d.CurrentConversation.Messages[i].Index-d.CurrentConversation.HighlightedMessage.Index)*12, d.CurrentConversation.Messages[i].Text+" <")
 				}
 			}
 		}
+		drawBlackFilledBox(img, 0, 0, dimensions.Dx(), 16)
+		drawText(img, 0, 13, d.CurrentConversation.Name)
+		drawHLine(img, 0, 15, dimensions.Dx())
+		drawBlackFilledBox(img, 0, ((dimensions.Dy()*75)/100)-1, dimensions.Dx(), dimensions.Dy())
+		drawHLine(img, 0, (dimensions.Dy()*75)/100, dimensions.Dx())
 	}
 
 	return img, nil

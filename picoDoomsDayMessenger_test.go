@@ -310,11 +310,11 @@ func TestProcessInputEventOpenMessages(t *testing.T) {
 	}
 	device.State = &testState0
 
-	err := device.ProcessInputEvent(InputEventOpenMessages)
+	err := device.ProcessInputEvent(InputEventOpenConversations)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	if device.State != &StateMessagesMenu {
+	if device.State != &StateConversationsMenu {
 		t.Errorf("The state should be StateMessages but is %v", device.State)
 	}
 }
@@ -423,21 +423,21 @@ func TestNewConversation(t *testing.T) {
 	}
 }
 
-func TestUpdateMessagesMenu(t *testing.T) {
+func TestUpdateConversationsMenu(t *testing.T) {
 	// Create a new Machine
 	device := NewDevice()
 	testConversation1 := &Conversation{Name: "Test1"}
 	testConversation2 := &Conversation{Name: "Test2"}
 	testConversation3 := &Conversation{Name: "Test3"}
 	device.Conversations = []*Conversation{testConversation1, testConversation2}
-	device.UpdateMessagesMenu()
-	if StateMessagesMenu.Content[1].Text != "Test1" {
-		t.Errorf("Content of MessagesMenu item 1 is not correct, have: %v want: %v", StateMessagesMenu.Content[1].Text, "TestPerson1")
+	device.UpdateConversationsMenu()
+	if StateConversationsMenu.Content[1].Text != "Test1" {
+		t.Errorf("Content of MessagesMenu item 1 is not correct, have: %v want: %v", StateConversationsMenu.Content[1].Text, "TestPerson1")
 	}
-	if StateMessagesMenu.Content[2].Text != "Test2" {
-		t.Errorf("Content of MessagesMenu item 2 is not correct, have: %v want: %v", StateMessagesMenu.Content[2].Text, "TestPerson2")
+	if StateConversationsMenu.Content[2].Text != "Test2" {
+		t.Errorf("Content of MessagesMenu item 2 is not correct, have: %v want: %v", StateConversationsMenu.Content[2].Text, "TestPerson2")
 	}
-	err := StateMessagesMenu.Content[1].Action(device)
+	err := StateConversationsMenu.Content[1].Action(device)
 	if err != nil {
 		t.Errorf("There was an unexpected error testing the Message Action, err: %s", err)
 	}
@@ -450,7 +450,7 @@ func TestUpdateMessagesMenu(t *testing.T) {
 	if len(device.StateHistory) != 2 {
 		t.Errorf("The length of the StateHistory is not 2, have: %d want: %d", len(device.StateHistory), 2)
 	}
-	err = StateMessagesMenu.Content[2].Action(device)
+	err = StateConversationsMenu.Content[2].Action(device)
 	if err != nil {
 		t.Errorf("There was an unexpected error testing the Message Action, err: %s", err)
 	}
@@ -461,8 +461,8 @@ func TestUpdateMessagesMenu(t *testing.T) {
 		t.Errorf("The length of the StateHistory is not 3, have: %d want: %d", len(device.StateHistory), 3)
 	}
 	device.Conversations = []*Conversation{testConversation3}
-	device.UpdateMessagesMenu()
-	if len(StateMessagesMenu.Content) != 2 {
-		t.Errorf("The length of the StateMessagesMenu Content is not 2, have: %d want: %d", len(StateMessagesMenu.Content), 2)
+	device.UpdateConversationsMenu()
+	if len(StateConversationsMenu.Content) != 2 {
+		t.Errorf("The length of the StateMessagesMenu Content is not 2, have: %d want: %d", len(StateConversationsMenu.Content), 2)
 	}
 }
