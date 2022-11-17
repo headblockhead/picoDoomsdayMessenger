@@ -121,7 +121,7 @@ func main() {
 
 	asdf := device.NewConversation()
 	asdf.Name = "Yo"
-	asdf.Messages = []picodoomsdaymessenger.Message{{Text: "Hello", TimeSent: time.Now(), TimeRecieved: time.Now(), Index: 1}, {Text: "World", TimeSent: time.Now(), TimeRecieved: time.Now(), Index: 2}}
+	asdf.Messages = []picodoomsdaymessenger.Message{{Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "Hello", Index: 0}, {Person: picodoomsdaymessenger.PersonDefault, Text: "World", Index: 1}}
 	asdf.HighlightedMessage = &asdf.Messages[len(asdf.Messages)-1]
 	device.UpdateMessagesMenu()
 
