@@ -19,6 +19,7 @@ type Device struct {
 	Conversations       []*Conversation
 	CurrentConversation *Conversation
 	SelfIdentity        *Person
+	KeyboardBuffer      string
 }
 
 // Conversation is a conversation with a person. It contains a list of Messages and a Person that the conversation is with.
@@ -487,7 +488,7 @@ var (
 
 // NewDevice returns a new Device with default parameters.
 func NewDevice() (d *Device) {
-	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault}
+	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, ""}
 }
 
 // NewConversation creates a blank new Conversation and adds it to the Device. It also returns a pointer to that Conversation.
@@ -649,6 +650,12 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 			err = d.ChangeStateWithHistory(&StateMainMenu)
 			return err
 		}
+	case InputEventNumber5:
+		{
+			if d.State == &StateConversationReader {
+				d.KeyboardBuffer += "5"
+			}
+		}
 	}
 	return nil
 }
@@ -714,6 +721,7 @@ func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err err
 		drawHLine(img, 0, 15, dimensions.Dx())
 		drawBlackFilledBox(img, 0, ((dimensions.Dy()*75)/100)-1, dimensions.Dx(), dimensions.Dy())
 		drawHLine(img, 0, (dimensions.Dy()*75)/100, dimensions.Dx())
+		drawText(img, 0, (dimensions.Dy()*75)/100+13, d.KeyboardBuffer)
 	}
 
 	return img, nil
