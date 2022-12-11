@@ -13,19 +13,27 @@ import (
 
 // Device is the main structure that holds all the information about the device. It has a State, a StateHistory, and an LEDAnimation.
 type Device struct {
-	State               *State
-	StateHistory        []*State
-	LEDAnimation        *LEDAnimation
-	Conversations       []*Conversation
-	CurrentConversation *Conversation
-	SelfIdentity        *Person
-	KeyboardBuffer      string
+	State                 *State
+	StateHistory          []*State
+	LEDAnimation          *LEDAnimation
+	Conversations         []*Conversation
+	CurrentConversation   *Conversation
+	SelfIdentity          *Person
+	KeyboardCurrentButton *KeyboardButton
+}
+
+type KeyboardButton struct {
+	Characters            []string
+	LastPress             time.Time
+	CurrentCharacterIndex int
+	Index                 int
 }
 
 // Conversation is a conversation with a person. It contains a list of Messages and a Person that the conversation is with.
 type Conversation struct {
 	Messages           []Message
 	HighlightedMessage *Message
+	KeyboardBuffer     string
 	Name               string
 }
 
@@ -68,6 +76,20 @@ type LEDAnimation struct {
 	CurrentFrame  int
 	Frames        [][6]color.RGBA
 }
+
+// Define the Keyboard Buttons
+var (
+	KeyboardButton1 = &KeyboardButton{[]string{"1", "2"}, time.Time{}, 0, 1}
+	KeyboardButton2 = &KeyboardButton{[]string{"a", "b", "c"}, time.Time{}, 0, 2}
+	KeyboardButton3 = &KeyboardButton{[]string{"d", "e", "f"}, time.Time{}, 0, 3}
+	KeyboardButton4 = &KeyboardButton{[]string{"g", "h", "i"}, time.Time{}, 0, 4}
+	KeyboardButton5 = &KeyboardButton{[]string{"j", "k", "l"}, time.Time{}, 0, 5}
+	KeyboardButton6 = &KeyboardButton{[]string{"m", "n", "o"}, time.Time{}, 0, 6}
+	KeyboardButton7 = &KeyboardButton{[]string{"p", "q", "r", "s"}, time.Time{}, 0, 7}
+	KeyboardButton8 = &KeyboardButton{[]string{"t", "u", "v"}, time.Time{}, 0, 8}
+	KeyboardButton9 = &KeyboardButton{[]string{"w", "x", "y", "z"}, time.Time{}, 0, 9}
+	KeyboardButton0 = &KeyboardButton{[]string{" "}, time.Time{}, 0, 0}
+)
 
 // Define default People
 var PersonDefault = Person{"You", 0}
@@ -355,10 +377,9 @@ var (
 var (
 	// LEDAnimationDefault is the default LED animation. It is used when no other animation is active and is simply black.
 	LEDAnimationDefault = LEDAnimation{
-		FrameDuration: 5 * time.Millisecond,
+		FrameDuration: 100 * time.Millisecond,
 		CurrentFrame:  0,
 		Frames: [][6]color.RGBA{
-			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 			{color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}, color.RGBA{0, 0, 0, 0}},
 		},
 	}
@@ -488,7 +509,7 @@ var (
 
 // NewDevice returns a new Device with default parameters.
 func NewDevice() (d *Device) {
-	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, ""}
+	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, KeyboardButton0}
 }
 
 // NewConversation creates a blank new Conversation and adds it to the Device. It also returns a pointer to that Conversation.
@@ -588,6 +609,7 @@ const (
 
 // ProcessInputEvent will take in an InputEvent and run appropriate actions based on the event.
 func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
+	// Process the keys that are always available.
 	switch inputEvent {
 	case InputEventUp:
 		{
@@ -650,10 +672,149 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 			err = d.ChangeStateWithHistory(&StateMainMenu)
 			return err
 		}
-	case InputEventNumber5:
-		{
-			if d.State == &StateConversationReader {
-				d.KeyboardBuffer += "5"
+	}
+	// Process the keys that are available in the conversationreader state.
+	if d.State == &StateConversationReader {
+		switch inputEvent {
+		case InputEventNumber1:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton1 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton1
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber2:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton2 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton2
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber3:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton3 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton3
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber4:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton4 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton4
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber5:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton5 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton5
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber6:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton6 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton6
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber7:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton7 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton7
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber8:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton8 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton8
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber9:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton9 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton9
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
+			}
+		case InputEventNumber0:
+			{
+				if d.KeyboardCurrentButton != KeyboardButton0 {
+					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+					d.KeyboardCurrentButton = KeyboardButton0
+					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+				} else {
+					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+					} else {
+						d.KeyboardCurrentButton.CurrentCharacterIndex++
+					}
+				}
 			}
 		}
 	}
@@ -721,7 +882,7 @@ func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err err
 		drawHLine(img, 0, 15, dimensions.Dx())
 		drawBlackFilledBox(img, 0, ((dimensions.Dy()*75)/100)-1, dimensions.Dx(), dimensions.Dy())
 		drawHLine(img, 0, (dimensions.Dy()*75)/100, dimensions.Dx())
-		drawText(img, 0, (dimensions.Dy()*75)/100+13, d.KeyboardBuffer)
+		drawText(img, 0, (dimensions.Dy()*75)/100+13, d.CurrentConversation.KeyboardBuffer+d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex])
 	}
 
 	return img, nil

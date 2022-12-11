@@ -1,4 +1,6 @@
 github.com/bgould/http v0.0.0-20190627042742-d268792bdee7/go.mod h1:BTqvVegvwifopl4KTEDth6Zezs9eR+lCWhvGKvkxJHE=
+github.com/chebyrash/promise v0.0.0-20220530143319-1123826567d6 h1:AtcTeZIfucJjiqhIeMoOAR292ti2QOyo2aqN3SoWopo=
+github.com/chebyrash/promise v0.0.0-20220530143319-1123826567d6/go.mod h1:4DRxP3p0R7/5msq1uKcI1THYmfWgFXxQqr0DutaIAEk=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
