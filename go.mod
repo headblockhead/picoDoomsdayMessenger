@@ -18,7 +18,6 @@ require (
 )
 
 require (
-	github.com/chebyrash/promise v0.0.0-20220530143319-1123826567d6
 	github.com/faiface/pixel v0.10.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 )
