@@ -9,6 +9,7 @@ import (
 	"time"
 
 	picodoomsdaymessenger "github.com/headblockhead/picoDoomsdayMessenger"
+	"github.com/headblockhead/tinygorfm9x"
 	"tinygo.org/x/drivers/ssd1306"
 	"tinygo.org/x/drivers/ws2812"
 )
@@ -37,7 +38,10 @@ func main() {
 	displayx, displayy := display.Size()
 
 	// Create a new Machine
-	device := picodoomsdaymessenger.NewDevice()
+	device, err := picodoomsdaymessenger.NewDevice()
+	if err != nil {
+		handleError(&display, &led, nil, err)
+	}
 
 	// Set the old machine state and old menu item to something that is not the starting value.
 	oldDeviceState := picodoomsdaymessenger.StateDefault
@@ -71,7 +75,7 @@ func main() {
 	leds := ws2812.New(neopixelpin)
 
 	// Clear the LED array.
-	err := displayLEDArray(&leds, [6]color.RGBA{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}})
+	err = displayLEDArray(&leds, [6]color.RGBA{{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}})
 	if err != nil {
 		handleError(&display, &led, device, err)
 	}
@@ -81,6 +85,48 @@ func main() {
 
 	// Store the last time that any of the buttons were pressed.
 	lastButtonPress := time.Now()
+
+	// Setup the RFM9x radio.
+	rfm := tinygorfm9x.RFM9x{
+		SpiDevice: *machine.SPI1,
+	}
+	err = rfm.Init(tinygorfm9x.Options{
+		FrequencyMhz:      868,
+		ResetPin:          machine.LORA_RESET,
+		CSPin:             machine.LORA_CS,
+		Dio0Pin:           machine.LORA_DIO0,
+		Dio1Pin:           machine.LORA_DIO1,
+		Dio2Pin:           machine.LORA_DIO2,
+		EnableCrcChecking: true,
+	})
+	if err != nil {
+		handleError(&display, &led, nil, err)
+	}
+
+	rfm.OnReceivedPacket = func(packet tinygorfm9x.Packet) {
+		payloadMessage, err := device.BytesToMessage(packet.Payload)
+		if err != nil {
+			handleError(&display, &led, device, err)
+			return
+		}
+		conversationAlreadyExists := false
+		for i := 0; i < len(device.Conversations); i++ {
+			for j := 0; j < len(device.Conversations[i].People); j++ {
+				if device.Conversations[i].People[j] != *device.SelfIdentity && device.Conversations[i].People[j] == payloadMessage.Person {
+					device.Conversations[i].Messages = append(device.Conversations[i].Messages, payloadMessage)
+					device.Conversations[i].HighlightedMessage = &device.Conversations[i].Messages[len(device.Conversations[i].Messages)-1]
+					conversationAlreadyExists = true
+					break
+				}
+			}
+		}
+		if !conversationAlreadyExists {
+			newConversation := device.NewConversation(payloadMessage.Person)
+			newConversation.Messages = append(newConversation.Messages, payloadMessage)
+			newConversation.HighlightedMessage = &newConversation.Messages[len(newConversation.Messages)-1]
+		}
+		device.UpdateConversationsMenu()
+	}
 
 	// Setup input reading. The columns are read and the rows are pulsed.
 	buttonsCol1 := machine.D9
@@ -119,15 +165,10 @@ func main() {
 		{picodoomsdaymessenger.InputEventOpenMainMenu, picodoomsdaymessenger.InputEventOpenConversations, picodoomsdaymessenger.InputEventOpenPeople, picodoomsdaymessenger.InputEventOpenSettings, picodoomsdaymessenger.InputEventAccept},
 	}
 
-	asdf := device.NewConversation()
-	asdf.Name = "Demo 1"
-	asdf.Messages = []picodoomsdaymessenger.Message{{Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "Hello", Index: 0}, {Person: picodoomsdaymessenger.PersonDefault, Text: "World", Index: 1}}
-	asdf.HighlightedMessage = &asdf.Messages[len(asdf.Messages)-1]
-	asdf2 := device.NewConversation()
-	asdf2.Name = "Demo 2"
-	asdf2.Messages = []picodoomsdaymessenger.Message{{Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "this is a test message", Index: 0}, {Person: picodoomsdaymessenger.PersonDefault, Text: "ok thanks", Index: 1}, {Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "this is another test message", Index: 2}, {Person: picodoomsdaymessenger.PersonDefault, Text: "thanks again", Index: 3}}
-	asdf2.HighlightedMessage = &asdf2.Messages[len(asdf2.Messages)-1]
-	device.UpdateConversationsMenu()
+	err = rfm.StartRecieve()
+	if err != nil {
+		handleError(&display, &led, device, err)
+	}
 
 	// Main program loop.
 	for {

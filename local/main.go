@@ -30,7 +30,11 @@ func run() {
 	win.Clear(colornames.Black)
 
 	// Create a new Machine
-	device := picodoomsdaymessenger.NewDevice()
+	device, err := picodoomsdaymessenger.NewDevice()
+	if err != nil {
+		panic(err)
+	}
+
 	// Record the display size
 	displayx, displayy := 128, 64
 	// Set the old machine state and old menu item to something that is not the starting value.

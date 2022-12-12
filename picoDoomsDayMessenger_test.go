@@ -11,7 +11,10 @@ import (
 
 func TestDefaults(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 
 	// Test the default state
 	if device.State != &StateMainMenu {
@@ -31,7 +34,10 @@ func TestDefaults(t *testing.T) {
 
 func TestChangeLEDAnimationWithoutContinue(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testLEDAnimation1 := LEDAnimation{
 		CurrentFrame: 0,
 	}
@@ -52,7 +58,10 @@ func TestChangeLEDAnimationWithoutContinue(t *testing.T) {
 
 func TestChangeLEDAnimationWithContinue(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testLEDAnimation1 := LEDAnimation{
 		CurrentFrame: 0,
 	}
@@ -73,7 +82,10 @@ func TestChangeLEDAnimationWithContinue(t *testing.T) {
 
 func TestChangeStateWithHistory(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testState0 := State{
 		HighlightedItem: &MenuItemDefault,
 	}
@@ -85,7 +97,7 @@ func TestChangeStateWithHistory(t *testing.T) {
 	}
 	device.State = &testState0
 
-	err := device.ChangeStateWithHistory(&testState1)
+	err = device.ChangeStateWithHistory(&testState1)
 
 	if err.Error() != "test error" {
 		t.Errorf("The error should be \"test error\" but is %v", err)
@@ -100,7 +112,10 @@ func TestChangeStateWithHistory(t *testing.T) {
 
 func TestChangeStateWithoutHistory(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testState0 := State{
 		HighlightedItem: &MenuItemDefault,
 	}
@@ -109,7 +124,7 @@ func TestChangeStateWithoutHistory(t *testing.T) {
 	}
 	device.State = &testState0
 
-	err := device.ChangeStateWithoutHistory(&testState1)
+	err = device.ChangeStateWithoutHistory(&testState1)
 
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
@@ -124,7 +139,10 @@ func TestChangeStateWithoutHistory(t *testing.T) {
 
 func TestGoBackState(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testState0 := State{
 		HighlightedItem: &MenuItemDefault,
 	}
@@ -134,7 +152,7 @@ func TestGoBackState(t *testing.T) {
 	device.StateHistory = []*State{&testState0, &testState1}
 	device.State = &testState1
 
-	err := device.GoBackState()
+	err = device.GoBackState()
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
@@ -154,7 +172,10 @@ func TestGoBackState(t *testing.T) {
 
 func TestProcessInputEventUp(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	menuItem0 := MenuItem{Text: "test0", Index: 0}
 	menuItem1 := MenuItem{Text: "test1", Index: 1}
 	testState0 := State{
@@ -163,7 +184,7 @@ func TestProcessInputEventUp(t *testing.T) {
 	}
 	device.State = &testState0
 
-	err := device.ProcessInputEvent(InputEventUp)
+	err = device.ProcessInputEvent(InputEventUp)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
@@ -203,7 +224,10 @@ func TestProcessInputEventUp(t *testing.T) {
 
 func TestProcessInputEventDown(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	menuItem0 := MenuItem{Text: "test0", Index: 0}
 	menuItem1 := MenuItem{Text: "test1", Index: 1}
 	testState0 := State{
@@ -212,7 +236,7 @@ func TestProcessInputEventDown(t *testing.T) {
 	}
 	device.State = &testState0
 
-	err := device.ProcessInputEvent(InputEventDown)
+	err = device.ProcessInputEvent(InputEventDown)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
@@ -252,7 +276,10 @@ func TestProcessInputEventDown(t *testing.T) {
 
 func TestProcessInputEventAccept(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	menuItem0 := MenuItem{Text: "test0", Index: 0, Action: func(d *Device) (err error) {
 		return errors.New("test error")
 	}}
@@ -262,7 +289,7 @@ func TestProcessInputEventAccept(t *testing.T) {
 	}
 	device.State = &testState0
 
-	err := device.ProcessInputEvent(InputEventAccept)
+	err = device.ProcessInputEvent(InputEventAccept)
 	if err.Error() != "test error" {
 		t.Errorf("The error should be \"test error\" but is %v", err)
 	}
@@ -270,13 +297,16 @@ func TestProcessInputEventAccept(t *testing.T) {
 
 func TestProcessInputEventOpenSettings(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testState0 := State{
 		HighlightedItem: &MenuItemDefault,
 	}
 	device.State = &testState0
 
-	err := device.ProcessInputEvent(InputEventOpenSettings)
+	err = device.ProcessInputEvent(InputEventOpenSettings)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
@@ -287,13 +317,16 @@ func TestProcessInputEventOpenSettings(t *testing.T) {
 
 func TestProcessInputEventOpenPeople(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testState0 := State{
 		HighlightedItem: &MenuItemDefault,
 	}
 	device.State = &testState0
 
-	err := device.ProcessInputEvent(InputEventOpenPeople)
+	err = device.ProcessInputEvent(InputEventOpenPeople)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
@@ -304,13 +337,16 @@ func TestProcessInputEventOpenPeople(t *testing.T) {
 
 func TestProcessInputEventOpenMessages(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testState0 := State{
 		HighlightedItem: &MenuItemDefault,
 	}
 	device.State = &testState0
 
-	err := device.ProcessInputEvent(InputEventOpenConversations)
+	err = device.ProcessInputEvent(InputEventOpenConversations)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
@@ -321,13 +357,16 @@ func TestProcessInputEventOpenMessages(t *testing.T) {
 
 func TestProcessInputEventOpenMainMenu(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testState0 := State{
 		HighlightedItem: &MenuItemDefault,
 	}
 	device.State = &testState0
 
-	err := device.ProcessInputEvent(InputEventOpenMainMenu)
+	err = device.ProcessInputEvent(InputEventOpenMainMenu)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
@@ -413,7 +452,10 @@ func TestDrawBlackFilledBox(t *testing.T) {
 
 func TestNewConversation(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	newConversation := device.NewConversation()
 	if len(device.Conversations) != 1 {
 		t.Errorf("Conversations list length is incorrect, have: %d want: 1", len(device.Conversations))
@@ -425,7 +467,10 @@ func TestNewConversation(t *testing.T) {
 
 func TestUpdateConversationsMenu(t *testing.T) {
 	// Create a new Machine
-	device := NewDevice()
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
 	testConversation1 := &Conversation{Name: "Test1"}
 	testConversation2 := &Conversation{Name: "Test2"}
 	testConversation3 := &Conversation{Name: "Test3"}
@@ -437,7 +482,7 @@ func TestUpdateConversationsMenu(t *testing.T) {
 	if StateConversationsMenu.Content[2].Text != "Test2" {
 		t.Errorf("Content of MessagesMenu item 2 is not correct, have: %v want: %v", StateConversationsMenu.Content[2].Text, "TestPerson2")
 	}
-	err := StateConversationsMenu.Content[1].Action(device)
+	err = StateConversationsMenu.Content[1].Action(device)
 	if err != nil {
 		t.Errorf("There was an unexpected error testing the Message Action, err: %s", err)
 	}

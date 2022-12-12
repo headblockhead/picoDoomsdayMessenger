@@ -1,11 +1,16 @@
 package picodoomsdaymessenger
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
+	"io"
+	"strconv"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
@@ -20,6 +25,7 @@ type Device struct {
 	CurrentConversation   *Conversation
 	SelfIdentity          *Person
 	KeyboardCurrentButton *KeyboardButton
+	zstdEncoder           *zstd.Encoder
 }
 
 type KeyboardButton struct {
@@ -35,6 +41,7 @@ type Conversation struct {
 	HighlightedMessage *Message
 	KeyboardBuffer     string
 	Name               string
+	People             []Person
 }
 
 // Person is a representation of another device. A Person has a name and a unique identifier
@@ -508,13 +515,17 @@ var (
 )
 
 // NewDevice returns a new Device with default parameters.
-func NewDevice() (d *Device) {
-	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, KeyboardButton0}
+func NewDevice() (d *Device, err error) {
+	enc, err := zstd.NewWriter(nil)
+	if err != nil {
+		return nil, err
+	}
+	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, KeyboardButton0, enc}, nil
 }
 
-// NewConversation creates a blank new Conversation and adds it to the Device. It also returns a pointer to that Conversation.
-func (d *Device) NewConversation() (c *Conversation) {
-	newConversation := &Conversation{}
+// NewConversation creates a blank new Conversation with a person and adds it to the Device. It also returns a pointer to that Conversation.
+func (d *Device) NewConversation(p Person) (c *Conversation) {
+	newConversation := &Conversation{People: []Person{*d.SelfIdentity, p}}
 	d.Conversations = append(d.Conversations, newConversation)
 	return newConversation
 }
@@ -956,4 +967,65 @@ func drawBlackFilledBox(img *image.RGBA, x1 int, y1 int, x2 int, y2 int) {
 	for ; y1 <= y2; y1++ {
 		drawHLineCol(img, x1, y1, x2, col)
 	}
+}
+
+// MesageToBytes converts a Message to a compressed byte array.
+func (d *Device) MesageToBytes(input Message) (output []byte, err error) {
+	seperatorByte := byte(0xcc)
+	uncompressedBytes := make([]byte, 0)
+	uncompressedBytes = append(uncompressedBytes, []byte(fmt.Sprint(input.Person.ID))...)
+	uncompressedBytes = append(uncompressedBytes, seperatorByte)
+	uncompressedBytes = append(uncompressedBytes, []byte(fmt.Sprint(input.Person.Name))...)
+	uncompressedBytes = append(uncompressedBytes, seperatorByte)
+	uncompressedBytes = append(uncompressedBytes, []byte(input.Text)...)
+	compressedBytes := new(bytes.Buffer)
+	err = Compress(d.zstdEncoder, bytes.NewReader(uncompressedBytes), compressedBytes)
+	if err != nil {
+		return nil, err
+	}
+	return compressedBytes.Bytes(), nil
+}
+
+// BytesToMessage converts a compressed byte array to a Message.
+func (d *Device) BytesToMessage(input []byte) (output Message, err error) {
+	seperatorByte := byte(0xcc)
+	decompressedBytes := new(bytes.Buffer)
+	err = Decompress(bytes.NewReader(input), decompressedBytes)
+	if err != nil {
+		return Message{}, err
+	}
+	decompressedBytesSplit := bytes.Split(decompressedBytes.Bytes(), []byte{seperatorByte})
+	personID, err := strconv.Atoi(string(decompressedBytesSplit[0]))
+	if err != nil {
+		return Message{}, err
+	}
+	output.Person.ID = uint32(personID)
+	output.Person.Name = string(decompressedBytesSplit[1])
+	output.Text = string(decompressedBytesSplit[2])
+	return output, nil
+}
+
+// Compress input to output.
+func Compress(encoder *zstd.Encoder, in io.Reader, out io.Writer) (err error) {
+	_, err = io.Copy(encoder, in)
+	if err != nil {
+		encoder.Close()
+		return err
+	}
+	return encoder.Close()
+}
+
+// Decompress input to output.
+func Decompress(in io.Reader, out io.Writer) (err error) {
+	decoder, err := zstd.NewReader(in)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, decoder)
+	if err != nil {
+		decoder.Close()
+		return err
+	}
+	decoder.Close()
+	return nil
 }
