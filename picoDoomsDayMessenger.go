@@ -616,51 +616,18 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 	switch inputEvent {
 	case InputEventUp:
 		{
-			if d.State != &StateConversationReader {
-				if d.State.HighlightedItem.Index <= 0 {
-					d.State.HighlightedItem = &d.State.Content[len(d.State.Content)-1]
-				} else {
-					d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index-1]
-				}
-			} else {
-				if d.CurrentConversation.HighlightedMessage.Index <= 0 {
-					d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[len(d.CurrentConversation.Messages)-1]
-				} else {
-					d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[d.CurrentConversation.HighlightedMessage.Index-1]
-				}
-			}
+			err = d.ProcessInputEventUp()
+			return err
 		}
 	case InputEventDown:
 		{
-			if d.State != &StateConversationReader {
-				if d.State.HighlightedItem.Index >= len(d.State.Content)-1 {
-					d.State.HighlightedItem = &d.State.Content[0]
-				} else {
-					d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index+1]
-				}
-			} else {
-				if d.CurrentConversation.HighlightedMessage.Index >= len(d.CurrentConversation.Messages)-1 {
-					d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[0]
-				} else {
-					d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[d.CurrentConversation.HighlightedMessage.Index+1]
-				}
-			}
+			err = d.ProcessInputEventDown()
+			return err
 		}
 	case InputEventAccept:
 		{
-			if d.State != &StateConversationReader {
-				err = d.State.HighlightedItem.Action(d)
-				return err
-			} else {
-				// return errors.New("cannot accept in conversation reader")
-				d.MesageToBytes(Message{
-					Text:   d.CurrentConversation.KeyboardBuffer,
-					Index:  len(d.CurrentConversation.Messages) + 1,
-					Person: *d.SelfIdentity,
-				})
-
-				return nil
-			}
+			err = d.ProcessInputEventAccept()
+			return err
 		}
 	case InputEventOpenSettings:
 		{
@@ -688,144 +655,253 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 		switch inputEvent {
 		case InputEventNumber1:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton1 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton1
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber1()
+				return err
 			}
 		case InputEventNumber2:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton2 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton2
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber2()
+				return err
 			}
 		case InputEventNumber3:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton3 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton3
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber3()
+				return err
 			}
 		case InputEventNumber4:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton4 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton4
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber4()
+				return err
 			}
 		case InputEventNumber5:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton5 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton5
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber5()
+				return err
 			}
 		case InputEventNumber6:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton6 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton6
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber6()
+				return err
 			}
 		case InputEventNumber7:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton7 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton7
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber7()
+				return err
 			}
 		case InputEventNumber8:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton8 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton8
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber8()
+				return err
 			}
 		case InputEventNumber9:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton9 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton9
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber9()
+				return err
 			}
 		case InputEventNumber0:
 			{
-				if d.KeyboardCurrentButton != KeyboardButton0 {
-					d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-					d.KeyboardCurrentButton = KeyboardButton0
-					d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-				} else {
-					if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-						d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-					} else {
-						d.KeyboardCurrentButton.CurrentCharacterIndex++
-					}
-				}
+				err = d.ProcessConversationInputEventNumber0()
+				return err
 			}
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessInputEventUp() (err error) {
+	if d.State != &StateConversationReader {
+		if d.State.HighlightedItem.Index <= 0 {
+			d.State.HighlightedItem = &d.State.Content[len(d.State.Content)-1]
+		} else {
+			d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index-1]
+		}
+	} else {
+		if d.CurrentConversation.HighlightedMessage.Index <= 0 {
+			d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[len(d.CurrentConversation.Messages)-1]
+		} else {
+			d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[d.CurrentConversation.HighlightedMessage.Index-1]
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessInputEventDown() (err error) {
+	if d.State != &StateConversationReader {
+		if d.State.HighlightedItem.Index >= len(d.State.Content)-1 {
+			d.State.HighlightedItem = &d.State.Content[0]
+		} else {
+			d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index+1]
+		}
+	} else {
+		if d.CurrentConversation.HighlightedMessage.Index >= len(d.CurrentConversation.Messages)-1 {
+			d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[0]
+		} else {
+			d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[d.CurrentConversation.HighlightedMessage.Index+1]
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessInputEventAccept() (err error) {
+	if d.State != &StateConversationReader {
+		err = d.State.HighlightedItem.Action(d)
+		return err
+	} else {
+		// return errors.New("cannot accept in conversation reader")
+		d.MesageToBytes(Message{
+			Text:   d.CurrentConversation.KeyboardBuffer,
+			Index:  len(d.CurrentConversation.Messages) + 1,
+			Person: *d.SelfIdentity,
+		})
+		return nil
+	}
+}
+
+func (d *Device) ProcessConversationInputEventNumber1() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton1 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton1
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber2() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton2 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton2
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber3() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton3 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton3
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber4() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton4 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton4
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber5() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton5 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton5
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber6() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton6 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton6
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber7() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton7 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton7
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber8() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton8 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton8
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber9() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton9 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton9
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
+		}
+	}
+	return nil
+}
+
+func (d *Device) ProcessConversationInputEventNumber0() (err error) {
+	if d.KeyboardCurrentButton != KeyboardButton0 {
+		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
+		d.KeyboardCurrentButton = KeyboardButton0
+		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	} else {
+		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
+			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		} else {
+			d.KeyboardCurrentButton.CurrentCharacterIndex++
 		}
 	}
 	return nil
