@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"io"
-	"strconv"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
@@ -25,7 +22,6 @@ type Device struct {
 	CurrentConversation   *Conversation
 	SelfIdentity          *Person
 	KeyboardCurrentButton *KeyboardButton
-	zstdEncoder           *zstd.Encoder
 }
 
 type KeyboardButton struct {
@@ -47,7 +43,7 @@ type Conversation struct {
 // Person is a representation of another device. A Person has a name and a unique identifier
 type Person struct {
 	Name string
-	ID   uint32
+	ID   int
 }
 
 // Message is a message sent inside a Conversation. It contains the time it was sent, the time it was recieved and the content of the message.
@@ -516,11 +512,7 @@ var (
 
 // NewDevice returns a new Device with default parameters.
 func NewDevice() (d *Device, err error) {
-	enc, err := zstd.NewWriter(nil)
-	if err != nil {
-		return nil, err
-	}
-	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, KeyboardButton0, enc}, nil
+	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, KeyboardButton0}, nil
 }
 
 // NewConversation creates a blank new Conversation with a person and adds it to the Device. It also returns a pointer to that Conversation.
@@ -660,7 +652,14 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 				err = d.State.HighlightedItem.Action(d)
 				return err
 			} else {
-				return errors.New("cannot accept in conversation reader")
+				// return errors.New("cannot accept in conversation reader")
+				d.MesageToBytes(Message{
+					Text:   d.CurrentConversation.KeyboardBuffer,
+					Index:  len(d.CurrentConversation.Messages) + 1,
+					Person: *d.SelfIdentity,
+				})
+
+				return nil
 			}
 		}
 	case InputEventOpenSettings:
@@ -832,6 +831,29 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 	return nil
 }
 
+// MesageToBytes converts a Message to a compressed byte array.
+func (d *Device) MesageToBytes(input Message) (output []byte, err error) {
+	seperatorByte := byte(0xcc)
+	bytesToSend := make([]byte, 0)
+	bytesToSend = append(bytesToSend, []byte(fmt.Sprint(input.Person.ID))...)
+	bytesToSend = append(bytesToSend, seperatorByte)
+	bytesToSend = append(bytesToSend, []byte(input.Person.Name)...)
+	bytesToSend = append(bytesToSend, seperatorByte)
+	bytesToSend = append(bytesToSend, []byte(input.Text)...)
+	return bytesToSend, nil
+}
+
+// BytesToMessage converts a compressed byte array to a Message.
+func (d *Device) BytesToMessage(input []byte) (output Message, err error) {
+	seperatorByte := byte(0xcc)
+	receivedBytesSplit := bytes.Split(input, []byte{seperatorByte})
+	personID := receivedBytesSplit[0]
+	output.Person.ID = int(personID[0])
+	output.Person.Name = string(receivedBytesSplit[1])
+	output.Text = string(receivedBytesSplit[2])
+	return output, nil
+}
+
 // GetFrame will take in a Device and return an image based on the state.
 func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err error) {
 	img := image.NewRGBA(dimensions)
@@ -967,65 +989,4 @@ func drawBlackFilledBox(img *image.RGBA, x1 int, y1 int, x2 int, y2 int) {
 	for ; y1 <= y2; y1++ {
 		drawHLineCol(img, x1, y1, x2, col)
 	}
-}
-
-// MesageToBytes converts a Message to a compressed byte array.
-func (d *Device) MesageToBytes(input Message) (output []byte, err error) {
-	seperatorByte := byte(0xcc)
-	uncompressedBytes := make([]byte, 0)
-	uncompressedBytes = append(uncompressedBytes, []byte(fmt.Sprint(input.Person.ID))...)
-	uncompressedBytes = append(uncompressedBytes, seperatorByte)
-	uncompressedBytes = append(uncompressedBytes, []byte(fmt.Sprint(input.Person.Name))...)
-	uncompressedBytes = append(uncompressedBytes, seperatorByte)
-	uncompressedBytes = append(uncompressedBytes, []byte(input.Text)...)
-	compressedBytes := new(bytes.Buffer)
-	err = Compress(d.zstdEncoder, bytes.NewReader(uncompressedBytes), compressedBytes)
-	if err != nil {
-		return nil, err
-	}
-	return compressedBytes.Bytes(), nil
-}
-
-// BytesToMessage converts a compressed byte array to a Message.
-func (d *Device) BytesToMessage(input []byte) (output Message, err error) {
-	seperatorByte := byte(0xcc)
-	decompressedBytes := new(bytes.Buffer)
-	err = Decompress(bytes.NewReader(input), decompressedBytes)
-	if err != nil {
-		return Message{}, err
-	}
-	decompressedBytesSplit := bytes.Split(decompressedBytes.Bytes(), []byte{seperatorByte})
-	personID, err := strconv.Atoi(string(decompressedBytesSplit[0]))
-	if err != nil {
-		return Message{}, err
-	}
-	output.Person.ID = uint32(personID)
-	output.Person.Name = string(decompressedBytesSplit[1])
-	output.Text = string(decompressedBytesSplit[2])
-	return output, nil
-}
-
-// Compress input to output.
-func Compress(encoder *zstd.Encoder, in io.Reader, out io.Writer) (err error) {
-	_, err = io.Copy(encoder, in)
-	if err != nil {
-		encoder.Close()
-		return err
-	}
-	return encoder.Close()
-}
-
-// Decompress input to output.
-func Decompress(in io.Reader, out io.Writer) (err error) {
-	decoder, err := zstd.NewReader(in)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(out, decoder)
-	if err != nil {
-		decoder.Close()
-		return err
-	}
-	decoder.Close()
-	return nil
 }

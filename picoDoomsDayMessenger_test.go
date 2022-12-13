@@ -430,14 +430,14 @@ func TestDrawBlackFilledBox(t *testing.T) {
 	// Create a new RGB Image
 	img0 := image.NewRGBA(image.Rect(0, 0, 4, 4))
 	// Fill the image with white
-	draw.Draw(img0, img0.Bounds(), &image.Uniform{color.RGBA{255, 255, 255, 255}}, image.ZP, draw.Src)
+	draw.Draw(img0, img0.Bounds(), &image.Uniform{color.RGBA{255, 255, 255, 255}}, image.Point{0, 0}, draw.Src)
 	// Fill the middle with black
 	drawBlackFilledBox(img0, 1, 1, 3, 3)
 
 	// Create a second RGB Image
 	img1 := image.NewRGBA(image.Rect(0, 0, 4, 4))
 	// Fill the image with white
-	draw.Draw(img1, img1.Bounds(), &image.Uniform{color.RGBA{255, 255, 255, 255}}, image.ZP, draw.Src)
+	draw.Draw(img1, img1.Bounds(), &image.Uniform{color.RGBA{255, 255, 255, 255}}, image.Point{0, 0}, draw.Src)
 	// Fill the middle with black
 	for x := 1; x <= 3; x++ {
 		for y := 1; y <= 3; y++ {
@@ -456,12 +456,19 @@ func TestNewConversation(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	newConversation := device.NewConversation()
+	conversationPerson := Person{Name: "Test"}
+	newConversation := device.NewConversation(conversationPerson)
 	if len(device.Conversations) != 1 {
 		t.Errorf("Conversations list length is incorrect, have: %d want: 1", len(device.Conversations))
 	}
 	if device.Conversations[0] != newConversation {
 		t.Errorf("The returned conversation is not equal to the one contained in the device's conversation list, have: %v want: %v", newConversation, device.Conversations[0])
+	}
+	if newConversation.People[0] != *device.SelfIdentity {
+		t.Errorf("The first conversation person is not equal to the SelfIdentity, have: %v want: %v", newConversation.People[0], *device.SelfIdentity)
+	}
+	if newConversation.People[1] != conversationPerson {
+		t.Errorf("The second conversation person is not equal to the one passed to the function, have: %v want: %v", newConversation.People[1], conversationPerson)
 	}
 }
 
@@ -509,5 +516,27 @@ func TestUpdateConversationsMenu(t *testing.T) {
 	device.UpdateConversationsMenu()
 	if len(StateConversationsMenu.Content) != 2 {
 		t.Errorf("The length of the StateMessagesMenu Content is not 2, have: %d want: %d", len(StateConversationsMenu.Content), 2)
+	}
+}
+
+func TestMessageConversion(t *testing.T) {
+	// Create a new Machine
+	device, err := NewDevice()
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
+	bytes, err := device.MesageToBytes(Message{Text: "Test", Person: Person{Name: "TestPerson"}})
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
+	message, err := device.BytesToMessage(bytes)
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
+	if message.Text != "Test" {
+		t.Errorf("The message text is not correct, have: %v want: %v", message.Text, "Test")
+	}
+	if message.Person.Name != "TestPerson" {
+		t.Errorf("The message person is not correct, have: %v want: %v", message.Person.Name, "TestPerson")
 	}
 }
