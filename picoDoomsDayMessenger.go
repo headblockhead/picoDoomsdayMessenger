@@ -22,6 +22,7 @@ type Device struct {
 	CurrentConversation   *Conversation
 	SelfIdentity          *Person
 	KeyboardCurrentButton *KeyboardButton
+	SendUsingRadio        func(packet []byte) (err error)
 }
 
 type KeyboardButton struct {
@@ -80,6 +81,15 @@ type LEDAnimation struct {
 	Frames        [][6]color.RGBA
 }
 
+// Define errors
+var (
+	ErrCursorIconBoxBoolTypeError         = errors.New("data is not a bool")
+	ErrDefaultMenuItem                    = errors.New("this error should not appear, if it does please tell us")
+	ErrRadioSendNotDefined                = errors.New("radio send function not defined by user")
+	ErrConversationReaderAcceptDisallowed = errors.New("cannot accept in conversation reader")
+	ErrGoBackStateRootState               = errors.New("already at root state")
+)
+
 // Define the Keyboard Buttons
 var (
 	KeyboardButton1 = &KeyboardButton{[]string{"1", "2"}, time.Time{}, 0, 1}
@@ -127,7 +137,7 @@ var (
 	CursorIconBox = func(img *image.RGBA, x int, y int, data any) (err error) {
 		isChecked, ok := data.(bool)
 		if !ok {
-			return errors.New("data is not a bool")
+			return ErrCursorIconBoxBoolTypeError
 		}
 		for i := 0; i < 7; i++ {
 			for j := 0; j < 7; j++ {
@@ -154,7 +164,7 @@ var (
 	MenuItemDefault MenuItem = MenuItem{
 		Text: "DefaultMenuItem",
 		Action: func(d *Device) (err error) {
-			return errors.New("default menu item action")
+			return ErrDefaultMenuItem
 		},
 		Index:      0,
 		CursorIcon: CursorIconRightArrow,
@@ -512,7 +522,33 @@ var (
 
 // NewDevice returns a new Device with default parameters.
 func NewDevice() (d *Device, err error) {
-	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, KeyboardButton0}, nil
+	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, KeyboardButton0, func(packet []byte) (err error) { return ErrRadioSendNotDefined }}, nil
+}
+
+// RecieveFromRadio takes in the payload of a radio packet, usually recieved from the RFM9x radio.
+func (d *Device) ReceiveFromRadio(packetPayload []byte) (err error) {
+	payloadMessage, err := d.BytesToMessage(packetPayload)
+	if err != nil {
+		return err
+	}
+	conversationAlreadyExists := false
+	for i := 0; i < len(d.Conversations); i++ {
+		for j := 0; j < len(d.Conversations[i].People); j++ {
+			if d.Conversations[i].People[j] != *d.SelfIdentity && d.Conversations[i].People[j] == payloadMessage.Person {
+				d.Conversations[i].Messages = append(d.Conversations[i].Messages, payloadMessage)
+				d.Conversations[i].HighlightedMessage = &d.Conversations[i].Messages[len(d.Conversations[i].Messages)-1]
+				conversationAlreadyExists = true
+				break
+			}
+		}
+	}
+	if !conversationAlreadyExists {
+		newConversation := d.NewConversation(payloadMessage.Person)
+		newConversation.Messages = append(newConversation.Messages, payloadMessage)
+		newConversation.HighlightedMessage = &newConversation.Messages[len(newConversation.Messages)-1]
+	}
+	d.UpdateConversationsMenu()
+	return nil
 }
 
 // NewConversation creates a blank new Conversation with a person and adds it to the Device. It also returns a pointer to that Conversation.
@@ -572,7 +608,7 @@ func (d *Device) ChangeStateWithoutHistory(newState *State) (err error) {
 // GoBackState will use the StateHistory to return to the upwards state in the tree.
 func (d *Device) GoBackState() (err error) {
 	if len(d.StateHistory) <= 1 {
-		return errors.New("already at root state")
+		return ErrGoBackStateRootState
 	}
 	err = d.ChangeStateWithoutHistory(d.StateHistory[len(d.StateHistory)-2])
 	d.StateHistory = d.StateHistory[0 : len(d.StateHistory)-1]
@@ -747,7 +783,7 @@ func (d *Device) ProcessInputEventAccept() (err error) {
 		err = d.State.HighlightedItem.Action(d)
 		return err
 	} else {
-		// return errors.New("cannot accept in conversation reader")
+		// return ErrConversationReaderAcceptDisallowed
 		d.MesageToBytes(Message{
 			Text:   d.CurrentConversation.KeyboardBuffer,
 			Index:  len(d.CurrentConversation.Messages) + 1,

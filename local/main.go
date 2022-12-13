@@ -48,16 +48,6 @@ func run() {
 		}
 	}()
 
-	asdf := device.NewConversation()
-	asdf.Name = "Demo 1"
-	asdf.Messages = []picodoomsdaymessenger.Message{{Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "Hello", Index: 0}, {Person: picodoomsdaymessenger.PersonDefault, Text: "World", Index: 1}}
-	asdf.HighlightedMessage = &asdf.Messages[len(asdf.Messages)-1]
-	asdf2 := device.NewConversation()
-	asdf2.Name = "Demo 2"
-	asdf2.Messages = []picodoomsdaymessenger.Message{{Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "this is a test message", Index: 0}, {Person: picodoomsdaymessenger.PersonDefault, Text: "ok thanks", Index: 1}, {Person: picodoomsdaymessenger.Person{Name: "Someone"}, Text: "this is another test message", Index: 2}, {Person: picodoomsdaymessenger.PersonDefault, Text: "thanks again", Index: 3}}
-	asdf2.HighlightedMessage = &asdf2.Messages[len(asdf2.Messages)-1]
-	device.UpdateConversationsMenu()
-
 	for !win.Closed() {
 		if win.JustPressed(pixelgl.KeySpace) {
 			err := device.ProcessInputEvent(picodoomsdaymessenger.InputEventAccept)

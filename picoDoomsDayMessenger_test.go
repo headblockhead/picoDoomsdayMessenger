@@ -30,6 +30,17 @@ func TestDefaults(t *testing.T) {
 	if device.LEDAnimation != &LEDAnimationDefault {
 		t.Errorf("The default LED animation should be LEDAnimationDefault but is %v", device.LEDAnimation)
 	}
+
+	// Test the default keyboard button
+	if device.KeyboardCurrentButton != KeyboardButton0 {
+		t.Errorf("The default keyboard button should be KeyboardCurrentButton but is %v", device.KeyboardCurrentButton)
+	}
+
+	// Test the default radiosend function
+	err = device.SendUsingRadio([]byte{})
+	if err != ErrRadioSendNotDefined {
+		t.Errorf("The default radio send function should have returned ErrRadioSendNotDefined, but returned %v", err)
+	}
 }
 
 func TestChangeLEDAnimationWithoutContinue(t *testing.T) {
@@ -86,21 +97,24 @@ func TestChangeStateWithHistory(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
+
+	errTest := errors.New("test error")
+
 	testState0 := State{
 		HighlightedItem: &MenuItemDefault,
 	}
 	testState1 := State{
 		HighlightedItem: &MenuItemDefault,
 		LoadAction: func(d *Device) (err error) {
-			return errors.New("test error")
+			return errTest
 		},
 	}
 	device.State = &testState0
 
 	err = device.ChangeStateWithHistory(&testState1)
 
-	if err.Error() != "test error" {
-		t.Errorf("The error should be \"test error\" but is %v", err)
+	if err != errTest {
+		t.Errorf("The error should be errTest but is %v", err)
 	}
 	if device.State != &testState1 {
 		t.Errorf("The state should be testState1 but is %v", device.State)
@@ -165,8 +179,8 @@ func TestGoBackState(t *testing.T) {
 	device.State = &testState0
 
 	err = device.GoBackState()
-	if err == nil {
-		t.Errorf("The error should not be nil")
+	if err != ErrGoBackStateRootState {
+		t.Errorf("The error should be ErrGoBackStateRootState, but is %v", err)
 	}
 }
 
@@ -280,8 +294,11 @@ func TestProcessInputEventAccept(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
+
+	errTest := errors.New("test error")
+
 	menuItem0 := MenuItem{Text: "test0", Index: 0, Action: func(d *Device) (err error) {
-		return errors.New("test error")
+		return errTest
 	}}
 	testState0 := State{
 		Content:         []MenuItem{menuItem0},
@@ -290,8 +307,8 @@ func TestProcessInputEventAccept(t *testing.T) {
 	device.State = &testState0
 
 	err = device.ProcessInputEvent(InputEventAccept)
-	if err.Error() != "test error" {
-		t.Errorf("The error should be \"test error\" but is %v", err)
+	if err != errTest {
+		t.Errorf("The error should be errTest but is %v", err)
 	}
 }
 
@@ -519,7 +536,7 @@ func TestUpdateConversationsMenu(t *testing.T) {
 	}
 }
 
-func TestMessageConversion(t *testing.T) {
+func TestMessageBytesConversion(t *testing.T) {
 	// Create a new Machine
 	device, err := NewDevice()
 	if err != nil {

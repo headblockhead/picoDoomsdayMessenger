@@ -104,28 +104,15 @@ func main() {
 	}
 
 	rfm.OnReceivedPacket = func(packet tinygorfm9x.Packet) {
-		payloadMessage, err := device.BytesToMessage(packet.Payload)
+		err = device.ReceiveFromRadio(packet.Payload)
 		if err != nil {
-			handleError(&display, &led, device, err)
-			return
+			handleError(&display, &led, nil, err)
 		}
-		conversationAlreadyExists := false
-		for i := 0; i < len(device.Conversations); i++ {
-			for j := 0; j < len(device.Conversations[i].People); j++ {
-				if device.Conversations[i].People[j] != *device.SelfIdentity && device.Conversations[i].People[j] == payloadMessage.Person {
-					device.Conversations[i].Messages = append(device.Conversations[i].Messages, payloadMessage)
-					device.Conversations[i].HighlightedMessage = &device.Conversations[i].Messages[len(device.Conversations[i].Messages)-1]
-					conversationAlreadyExists = true
-					break
-				}
-			}
-		}
-		if !conversationAlreadyExists {
-			newConversation := device.NewConversation(payloadMessage.Person)
-			newConversation.Messages = append(newConversation.Messages, payloadMessage)
-			newConversation.HighlightedMessage = &newConversation.Messages[len(newConversation.Messages)-1]
-		}
-		device.UpdateConversationsMenu()
+	}
+
+	device.SendUsingRadio = func(packet []byte) (err error) {
+		err = rfm.Send(packet)
+		return err
 	}
 
 	// Setup input reading. The columns are read and the rows are pulsed.
