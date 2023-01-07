@@ -39,7 +39,7 @@ func run() {
 	displayx, displayy := 128, 64
 	// Set the old machine state and old menu item to something that is not the starting value.
 	oldDeviceState := picodoomsdaymessenger.StateDefault
-	oldDeviceHighlightedItem := &picodoomsdaymessenger.MenuItemDefault
+	oldDeviceHighlightedItemIndex := 0
 
 	// Panic recovery
 	defer func() {
@@ -75,9 +75,9 @@ func run() {
 		}
 		time.Sleep(time.Millisecond * 1)
 		// Update the display only if the state changes
-		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
+		if !reflect.DeepEqual(oldDeviceState, device.State) || !(oldDeviceHighlightedItemIndex == device.State.HighlightedItemIndex) {
 			oldDeviceState = *device.State
-			oldDeviceHighlightedItem = device.State.HighlightedItem
+			oldDeviceHighlightedItemIndex = device.State.HighlightedItemIndex
 			frame, err := picodoomsdaymessenger.GetFrame(image.Rect(0, 0, int(displayx), int(displayy)), device)
 			if err != nil {
 				handleError(win, device, err)

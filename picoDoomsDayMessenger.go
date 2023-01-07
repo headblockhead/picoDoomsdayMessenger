@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math/rand"
 	"time"
 
 	"golang.org/x/image/font"
@@ -15,30 +16,29 @@ import (
 
 // Device is the main structure that holds all the information about the device. It has a State, a StateHistory, and an LEDAnimation.
 type Device struct {
-	State                 *State
-	StateHistory          []*State
-	LEDAnimation          *LEDAnimation
-	Conversations         []*Conversation
-	CurrentConversation   *Conversation
-	SelfIdentity          *Person
-	KeyboardCurrentButton *KeyboardButton
-	SendUsingRadio        func(packet []byte) (err error)
+	State                    *State
+	StateHistory             []*State
+	LEDAnimation             *LEDAnimation
+	Conversations            []*Conversation
+	CurrentConversationIndex int
+	SelfIdentity             Person
+	CurrentKeyboardButton    *KeyboardButton
+	SendUsingRadio           func(packet []byte) (err error)
 }
 
 type KeyboardButton struct {
 	Characters            []string
 	LastPress             time.Time
 	CurrentCharacterIndex int
-	Index                 int
 }
 
 // Conversation is a conversation with a person. It contains a list of Messages and a Person that the conversation is with.
 type Conversation struct {
-	Messages           []Message
-	HighlightedMessage *Message
-	KeyboardBuffer     string
-	Name               string
-	People             []Person
+	Messages                []Message
+	HighlightedMessageIndex int
+	KeyboardBuffer          string
+	Name                    string
+	People                  []Person
 }
 
 // Person is a representation of another device. A Person has a name and a unique identifier
@@ -49,24 +49,23 @@ type Person struct {
 
 // Message is a message sent inside a Conversation. It contains the time it was sent, the time it was recieved and the content of the message.
 type Message struct {
-	Text   string
-	Index  int
-	Person Person
+	Text     string
+	Person   Person
+	TimeSent time.Time
 }
 
 // State is the current state of the device. It contains all the information about what is currently being displayed.
 type State struct {
-	Title           string
-	Content         []MenuItem
-	HighlightedItem *MenuItem
-	LoadAction      func(d *Device) (err error)
+	Title                string
+	Content              []MenuItem
+	HighlightedItemIndex int
+	LoadAction           func(d *Device) (err error)
 }
 
 // MenuItem is a structure that holds data that can be displayed on the screen. It contains a title and an action that is run when the item is selected.
 type MenuItem struct {
 	Text          string
 	Action        func(d *Device) (err error)
-	Index         int
 	GetCursorData func(d *Device) (data any, err error)
 	CursorIcon    CursorIcon
 }
@@ -88,24 +87,27 @@ var (
 	ErrRadioSendNotDefined                = errors.New("radio send function not defined by user")
 	ErrConversationReaderAcceptDisallowed = errors.New("cannot accept in conversation reader")
 	ErrGoBackStateRootState               = errors.New("already at root state")
+	ErrInvalidMessage                     = errors.New("invalid message, prefix incorrect")
 )
 
 // Define the Keyboard Buttons
 var (
-	KeyboardButton1 = &KeyboardButton{[]string{"1", "2"}, time.Time{}, 0, 1}
-	KeyboardButton2 = &KeyboardButton{[]string{"a", "b", "c"}, time.Time{}, 0, 2}
-	KeyboardButton3 = &KeyboardButton{[]string{"d", "e", "f"}, time.Time{}, 0, 3}
-	KeyboardButton4 = &KeyboardButton{[]string{"g", "h", "i"}, time.Time{}, 0, 4}
-	KeyboardButton5 = &KeyboardButton{[]string{"j", "k", "l"}, time.Time{}, 0, 5}
-	KeyboardButton6 = &KeyboardButton{[]string{"m", "n", "o"}, time.Time{}, 0, 6}
-	KeyboardButton7 = &KeyboardButton{[]string{"p", "q", "r", "s"}, time.Time{}, 0, 7}
-	KeyboardButton8 = &KeyboardButton{[]string{"t", "u", "v"}, time.Time{}, 0, 8}
-	KeyboardButton9 = &KeyboardButton{[]string{"w", "x", "y", "z"}, time.Time{}, 0, 9}
-	KeyboardButton0 = &KeyboardButton{[]string{" "}, time.Time{}, 0, 0}
+	KeyboardButton1 = &KeyboardButton{[]string{"1", "2"}, time.Time{}, 0}
+	KeyboardButton2 = &KeyboardButton{[]string{"a", "b", "c"}, time.Time{}, 0}
+	KeyboardButton3 = &KeyboardButton{[]string{"d", "e", "f"}, time.Time{}, 0}
+	KeyboardButton4 = &KeyboardButton{[]string{"g", "h", "i"}, time.Time{}, 0}
+	KeyboardButton5 = &KeyboardButton{[]string{"j", "k", "l"}, time.Time{}, 0}
+	KeyboardButton6 = &KeyboardButton{[]string{"m", "n", "o"}, time.Time{}, 0}
+	KeyboardButton7 = &KeyboardButton{[]string{"p", "q", "r", "s"}, time.Time{}, 0}
+	KeyboardButton8 = &KeyboardButton{[]string{"t", "u", "v"}, time.Time{}, 0}
+	KeyboardButton9 = &KeyboardButton{[]string{"w", "x", "y", "z"}, time.Time{}, 0}
+	KeyboardButton0 = &KeyboardButton{[]string{" "}, time.Time{}, 0}
 )
 
 // Define default People
-var PersonDefault = Person{"You", 0}
+
+// PersonYou is a default person that is used for your self identity. Do not use this to identify yourself, use d.SelfIdentity instead.
+var PersonYou = Person{"You", 0}
 
 // Define Cursors
 var (
@@ -166,7 +168,6 @@ var (
 		Action: func(d *Device) (err error) {
 			return ErrDefaultMenuItem
 		},
-		Index:      0,
 		CursorIcon: CursorIconRightArrow,
 	}
 
@@ -182,7 +183,6 @@ var (
 			}
 			return nil
 		},
-		Index:      0,
 		CursorIcon: CursorIconLeftArrow,
 	}
 
@@ -198,7 +198,7 @@ var (
 			}
 			return nil
 		},
-		Index:      0,
+
 		CursorIcon: CursorIconRightArrow,
 	}
 
@@ -212,7 +212,7 @@ var (
 			}
 			return nil
 		},
-		Index:      1,
+
 		CursorIcon: CursorIconRightArrow,
 	}
 
@@ -226,7 +226,7 @@ var (
 			}
 			return nil
 		},
-		Index:      2,
+
 		CursorIcon: CursorIconRightArrow,
 	}
 
@@ -240,7 +240,7 @@ var (
 			}
 			return nil
 		},
-		Index:      3,
+
 		CursorIcon: CursorIconRightArrow,
 	}
 
@@ -254,7 +254,7 @@ var (
 			}
 			return nil
 		},
-		Index:      4,
+
 		CursorIcon: CursorIconRightArrow,
 	}
 
@@ -268,7 +268,7 @@ var (
 			}
 			return nil
 		},
-		Index:      5,
+
 		CursorIcon: CursorIconRightArrow,
 	}
 
@@ -293,7 +293,7 @@ var (
 			}
 			return nil
 		},
-		Index: 1,
+
 		GetCursorData: func(d *Device) (data any, err error) {
 			return d.LEDAnimation == &LEDAnimationDemo, nil
 		},
@@ -319,11 +319,20 @@ var (
 			}
 			return nil
 		},
-		Index: 1,
+
 		GetCursorData: func(d *Device) (data any, err error) {
 			return d.LEDAnimation == &LEDAnimationSOS, nil
 		},
 		CursorIcon: CursorIconBox,
+	}
+	// Conversation Menu Items
+	ConversationsMenuItemNew MenuItem = MenuItem{
+		Text: "New Conversation",
+		Action: func(d *Device) (err error) {
+			d.ChangeStateWithHistory(&StateNewConversation)
+			return nil
+		},
+		CursorIcon: CursorIconRightArrow,
 	}
 )
 
@@ -331,9 +340,9 @@ var (
 var (
 	// StateDefault is a State that does nothing. It is used as a placeholder for the default State of the Device.
 	StateDefault = State{
-		Title:           "DefaultState",
-		Content:         []MenuItem{MenuItemDefault},
-		HighlightedItem: &MenuItemDefault,
+		Title:                "DefaultState",
+		Content:              []MenuItem{MenuItemDefault},
+		HighlightedItemIndex: 0,
 	}
 	// StateConversationReader is a special State that is used when reading a Conversation.
 	StateConversationReader = State{
@@ -342,47 +351,53 @@ var (
 	}
 	// StateMainMenu is a State that shows the main menu.
 	StateMainMenu = State{
-		Title:           "Main Menu",
-		Content:         []MenuItem{MainMenuItemConversations, MainMenuItemPeople, MainMenuItemGames, MainMenuItemDemos, MainMenuItemTools, MainMenuItemSettings},
-		HighlightedItem: &MainMenuItemConversations,
+		Title:                "Main Menu",
+		Content:              []MenuItem{MainMenuItemConversations, MainMenuItemPeople, MainMenuItemGames, MainMenuItemDemos, MainMenuItemTools, MainMenuItemSettings},
+		HighlightedItemIndex: 0,
 	}
 	// StateConversationsMenu is a State that shows the conversations menu.
 	StateConversationsMenu = State{
-		Title:           "Conversations",
-		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: &GlobalMenuItemGoBack,
+		Title:                "Conversations",
+		Content:              []MenuItem{GlobalMenuItemGoBack, ConversationsMenuItemNew},
+		HighlightedItemIndex: 0,
 	}
 	// StateConversationsMenuOld is a copy of StateConversationsMenu that can be used as a starting point to reset StateConversationsMenu.
 	StateConversationsMenuOld = StateConversationsMenu
+	// StateNewConversation is a special State that is used when creating a new Conversation.
+	StateNewConversation = State{
+		Title:                "New Conversation",
+		Content:              []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItemIndex: 0,
+	}
 	// StatePeopleMenu is a State that shows the people menu.
 	StatePeopleMenu = State{
-		Title:           "People",
-		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: &GlobalMenuItemGoBack,
+		Title:                "People",
+		Content:              []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItemIndex: 0,
 	}
 	// StateGamesMenu is a State that shows the games menu.
 	StateGamesMenu = State{
-		Title:           "Games",
-		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: &GlobalMenuItemGoBack,
+		Title:                "Games",
+		Content:              []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItemIndex: 0,
 	}
 	// StateDemosMenu is a State that shows the demos menu.
 	StateDemosMenu = State{
-		Title:           "Demos",
-		Content:         []MenuItem{GlobalMenuItemGoBack, DemoMenuItemRGB},
-		HighlightedItem: &GlobalMenuItemGoBack,
+		Title:                "Demos",
+		Content:              []MenuItem{GlobalMenuItemGoBack, DemoMenuItemRGB},
+		HighlightedItemIndex: 0,
 	}
 	// StateToolsMenu is a State that shows the tools menu.
 	StateToolsMenu = State{
-		Title:           "Tools",
-		Content:         []MenuItem{GlobalMenuItemGoBack, ToolsMenuItemSOS},
-		HighlightedItem: &GlobalMenuItemGoBack,
+		Title:                "Tools",
+		Content:              []MenuItem{GlobalMenuItemGoBack, ToolsMenuItemSOS},
+		HighlightedItemIndex: 0,
 	}
 	// StateSettingsMenu is a State that shows the settings menu.
 	StateSettingsMenu = State{
-		Title:           "Settings",
-		Content:         []MenuItem{GlobalMenuItemGoBack},
-		HighlightedItem: &GlobalMenuItemGoBack,
+		Title:                "Settings",
+		Content:              []MenuItem{GlobalMenuItemGoBack},
+		HighlightedItemIndex: 0,
 	}
 )
 
@@ -522,7 +537,20 @@ var (
 
 // NewDevice returns a new Device with default parameters.
 func NewDevice() (d *Device, err error) {
-	return &Device{&StateMainMenu, []*State{&StateMainMenu}, &LEDAnimationDefault, []*Conversation{}, &Conversation{}, &PersonDefault, KeyboardButton0, func(packet []byte) (err error) { return ErrRadioSendNotDefined }}, nil
+	rand.Seed(time.Now().UnixNano())
+	PersonYou.ID = rand.Intn(2147483647) // Max value of an int32
+	return &Device{
+		State:                    &StateMainMenu,
+		StateHistory:             []*State{&StateMainMenu},
+		LEDAnimation:             &LEDAnimationDefault,
+		Conversations:            []*Conversation{},
+		SelfIdentity:             PersonYou,
+		CurrentConversationIndex: 0,
+		CurrentKeyboardButton:    KeyboardButton0,
+		SendUsingRadio: func(packet []byte) (err error) {
+			return ErrRadioSendNotDefined
+		},
+	}, nil
 }
 
 // RecieveFromRadio takes in the payload of a radio packet, usually recieved from the RFM9x radio.
@@ -531,29 +559,19 @@ func (d *Device) ReceiveFromRadio(packetPayload []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	conversationAlreadyExists := false
-	for i := 0; i < len(d.Conversations); i++ {
-		for j := 0; j < len(d.Conversations[i].People); j++ {
-			if d.Conversations[i].People[j] != *d.SelfIdentity && d.Conversations[i].People[j] == payloadMessage.Person {
-				d.Conversations[i].Messages = append(d.Conversations[i].Messages, payloadMessage)
-				d.Conversations[i].HighlightedMessage = &d.Conversations[i].Messages[len(d.Conversations[i].Messages)-1]
-				conversationAlreadyExists = true
-				break
-			}
-		}
-	}
-	if !conversationAlreadyExists {
-		newConversation := d.NewConversation(payloadMessage.Person)
-		newConversation.Messages = append(newConversation.Messages, payloadMessage)
-		newConversation.HighlightedMessage = &newConversation.Messages[len(newConversation.Messages)-1]
-	}
+
+	newConversation := d.NewConversation(payloadMessage.Person)
+	newConversation.Messages = append(newConversation.Messages, payloadMessage)
+	newConversation.HighlightedMessageIndex = len(newConversation.Messages) - 1
+	newConversation.Name = fmt.Sprint(payloadMessage.Person.ID)
+
 	d.UpdateConversationsMenu()
 	return nil
 }
 
 // NewConversation creates a blank new Conversation with a person and adds it to the Device. It also returns a pointer to that Conversation.
 func (d *Device) NewConversation(p Person) (c *Conversation) {
-	newConversation := &Conversation{People: []Person{*d.SelfIdentity, p}}
+	newConversation := &Conversation{People: []Person{d.SelfIdentity, p}}
 	d.Conversations = append(d.Conversations, newConversation)
 	return newConversation
 }
@@ -566,14 +584,14 @@ func (d *Device) UpdateConversationsMenu() {
 		StateConversationsMenu.Content = append(StateConversationsMenu.Content, MenuItem{
 			Text: d.Conversations[j].Name,
 			Action: func(d *Device) (err error) {
-				d.CurrentConversation = d.Conversations[j]
+				d.CurrentConversationIndex = j
 				err = d.ChangeStateWithHistory(&StateConversationReader)
 				return err
 			},
-			Index:      j + 1,
 			CursorIcon: CursorIconRightArrow,
 		})
 	}
+	StateConversationsMenu.HighlightedItemIndex = len(StateConversationsMenu.Content) - 1
 }
 
 // ChangeLEDAnimationWithoutContinue changes the current LED animation of the device without continuing from the last time it was played.
@@ -746,16 +764,16 @@ func (d *Device) ProcessInputEvent(inputEvent InputEvent) (err error) {
 
 func (d *Device) ProcessInputEventUp() (err error) {
 	if d.State != &StateConversationReader {
-		if d.State.HighlightedItem.Index <= 0 {
-			d.State.HighlightedItem = &d.State.Content[len(d.State.Content)-1]
+		if d.State.HighlightedItemIndex <= 0 {
+			d.State.HighlightedItemIndex = len(d.State.Content) - 1
 		} else {
-			d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index-1]
+			d.State.HighlightedItemIndex--
 		}
 	} else {
-		if d.CurrentConversation.HighlightedMessage.Index <= 0 {
-			d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[len(d.CurrentConversation.Messages)-1]
+		if d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex <= 0 {
+			d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex = len(d.Conversations[d.CurrentConversationIndex].Messages) - 1
 		} else {
-			d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[d.CurrentConversation.HighlightedMessage.Index-1]
+			d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex = d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex - 1
 		}
 	}
 	return nil
@@ -763,16 +781,16 @@ func (d *Device) ProcessInputEventUp() (err error) {
 
 func (d *Device) ProcessInputEventDown() (err error) {
 	if d.State != &StateConversationReader {
-		if d.State.HighlightedItem.Index >= len(d.State.Content)-1 {
-			d.State.HighlightedItem = &d.State.Content[0]
+		if d.State.HighlightedItemIndex >= len(d.State.Content)-1 {
+			d.State.HighlightedItemIndex = 0
 		} else {
-			d.State.HighlightedItem = &d.State.Content[d.State.HighlightedItem.Index+1]
+			d.State.HighlightedItemIndex++
 		}
 	} else {
-		if d.CurrentConversation.HighlightedMessage.Index >= len(d.CurrentConversation.Messages)-1 {
-			d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[0]
+		if d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex >= len(d.Conversations[d.CurrentConversationIndex].Messages)-1 {
+			d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex = 0
 		} else {
-			d.CurrentConversation.HighlightedMessage = &d.CurrentConversation.Messages[d.CurrentConversation.HighlightedMessage.Index+1]
+			d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex++
 		}
 	}
 	return nil
@@ -780,164 +798,73 @@ func (d *Device) ProcessInputEventDown() (err error) {
 
 func (d *Device) ProcessInputEventAccept() (err error) {
 	if d.State != &StateConversationReader {
-		err = d.State.HighlightedItem.Action(d)
+		err = d.State.Content[d.State.HighlightedItemIndex].Action(d)
 		return err
 	} else {
 		// return ErrConversationReaderAcceptDisallowed
-		d.MesageToBytes(Message{
-			Text:   d.CurrentConversation.KeyboardBuffer,
-			Index:  len(d.CurrentConversation.Messages) + 1,
-			Person: *d.SelfIdentity,
+		packetToSend, err := d.MesageToBytes(Message{
+			Text:   d.Conversations[d.CurrentConversationIndex].KeyboardBuffer + d.CurrentKeyboardButton.Characters[d.CurrentKeyboardButton.CurrentCharacterIndex],
+			Person: d.SelfIdentity,
 		})
-		return nil
+		if err != nil {
+			return err
+		}
+		d.Conversations[d.CurrentConversationIndex].KeyboardBuffer = ""
+		d.CurrentKeyboardButton = &KeyboardButton{Characters: []string{""}, CurrentCharacterIndex: 0}
+		return d.SendUsingRadio(packetToSend)
 	}
 }
 
 func (d *Device) ProcessConversationInputEventNumber1() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton1 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton1
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton1)
 }
 
 func (d *Device) ProcessConversationInputEventNumber2() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton2 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton2
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton2)
 }
 
 func (d *Device) ProcessConversationInputEventNumber3() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton3 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton3
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton3)
 }
 
 func (d *Device) ProcessConversationInputEventNumber4() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton4 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton4
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton4)
 }
 
 func (d *Device) ProcessConversationInputEventNumber5() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton5 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton5
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton5)
 }
 
 func (d *Device) ProcessConversationInputEventNumber6() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton6 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton6
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton6)
 }
 
 func (d *Device) ProcessConversationInputEventNumber7() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton7 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton7
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton7)
 }
 
 func (d *Device) ProcessConversationInputEventNumber8() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton8 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton8
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton8)
 }
 
 func (d *Device) ProcessConversationInputEventNumber9() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton9 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton9
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
-		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
-		}
-	}
-	return nil
+	return d.ProcessConversationInputEventNumber(KeyboardButton9)
 }
 
 func (d *Device) ProcessConversationInputEventNumber0() (err error) {
-	if d.KeyboardCurrentButton != KeyboardButton0 {
-		d.CurrentConversation.KeyboardBuffer += d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex]
-		d.KeyboardCurrentButton = KeyboardButton0
-		d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+	return d.ProcessConversationInputEventNumber(KeyboardButton0)
+}
+
+func (d *Device) ProcessConversationInputEventNumber(button *KeyboardButton) (err error) {
+	if d.CurrentKeyboardButton != button {
+		d.Conversations[d.CurrentConversationIndex].KeyboardBuffer += d.CurrentKeyboardButton.Characters[d.CurrentKeyboardButton.CurrentCharacterIndex]
+		d.CurrentKeyboardButton = button
+		d.CurrentKeyboardButton.CurrentCharacterIndex = 0
 	} else {
-		if d.KeyboardCurrentButton.CurrentCharacterIndex >= len(d.KeyboardCurrentButton.Characters)-1 {
-			d.KeyboardCurrentButton.CurrentCharacterIndex = 0
+		if d.CurrentKeyboardButton.CurrentCharacterIndex >= len(d.CurrentKeyboardButton.Characters)-1 {
+			d.CurrentKeyboardButton.CurrentCharacterIndex = 0
 		} else {
-			d.KeyboardCurrentButton.CurrentCharacterIndex++
+			d.CurrentKeyboardButton.CurrentCharacterIndex++
 		}
 	}
 	return nil
@@ -945,8 +872,10 @@ func (d *Device) ProcessConversationInputEventNumber0() (err error) {
 
 // MesageToBytes converts a Message to a compressed byte array.
 func (d *Device) MesageToBytes(input Message) (output []byte, err error) {
+	staringBytes := []byte{0x64, 0x6F, 0x6F, 0x6D} // ASCII for "doom"
 	seperatorByte := byte(0xcc)
 	bytesToSend := make([]byte, 0)
+	bytesToSend = append(bytesToSend, staringBytes...)
 	bytesToSend = append(bytesToSend, []byte(fmt.Sprint(input.Person.ID))...)
 	bytesToSend = append(bytesToSend, seperatorByte)
 	bytesToSend = append(bytesToSend, []byte(input.Person.Name)...)
@@ -957,6 +886,10 @@ func (d *Device) MesageToBytes(input Message) (output []byte, err error) {
 
 // BytesToMessage converts a compressed byte array to a Message.
 func (d *Device) BytesToMessage(input []byte) (output Message, err error) {
+	startingBytes := []byte{0x64, 0x6F, 0x6F, 0x6D} // ASCII for "doom"
+	if !bytes.HasPrefix(input, startingBytes) {
+		return output, ErrInvalidMessage
+	}
 	seperatorByte := byte(0xcc)
 	receivedBytesSplit := bytes.Split(input, []byte{seperatorByte})
 	personID := receivedBytesSplit[0]
@@ -970,15 +903,15 @@ func (d *Device) BytesToMessage(input []byte) (output Message, err error) {
 func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err error) {
 	img := image.NewRGBA(dimensions)
 
-	if d.State != &StateConversationReader {
+	if d.State != &StateConversationReader && d.State != &StateNewConversation {
 		// Draw the content with the currently highlighted item in the middle of the screen and the other items above and below it.
 		for i := 0; i < len(d.State.Content); i++ {
-			if d.State.Content[i].Index == d.State.HighlightedItem.Index {
+			if i == d.State.HighlightedItemIndex {
 				drawText(img, 0, 43, d.State.Content[i].Text)
-			} else if d.State.Content[i].Index < d.State.HighlightedItem.Index {
-				drawText(img, 0, 43-(d.State.HighlightedItem.Index-d.State.Content[i].Index)*12, d.State.Content[i].Text)
-			} else if d.State.Content[i].Index > d.State.HighlightedItem.Index {
-				drawText(img, 0, 43+(d.State.Content[i].Index-d.State.HighlightedItem.Index)*12, d.State.Content[i].Text)
+			} else if i < d.State.HighlightedItemIndex {
+				drawText(img, 0, 43-(d.State.HighlightedItemIndex-i)*12, d.State.Content[i].Text)
+			} else if i > d.State.HighlightedItemIndex {
+				drawText(img, 0, 43+(i-d.State.HighlightedItemIndex)*12, d.State.Content[i].Text)
 			}
 		}
 
@@ -989,45 +922,45 @@ func GetFrame(dimensions image.Rectangle, d *Device) (frame image.Image, err err
 
 		// Draw the cursor. If the cursor is a checkbox, check if the checkbox is checked or not.
 		var cursorData any
-		if d.State.HighlightedItem.GetCursorData != nil {
-			cursorData, err = d.State.HighlightedItem.GetCursorData(d)
+		if d.State.Content[d.State.HighlightedItemIndex].GetCursorData != nil {
+			cursorData, err = d.State.Content[d.State.HighlightedItemIndex].GetCursorData(d)
 			if err != nil {
 				return nil, err
 			}
 		}
-		err = d.State.HighlightedItem.CursorIcon(img, dimensions.Dx()-7, 36, cursorData)
+		err = d.State.Content[d.State.HighlightedItemIndex].CursorIcon(img, dimensions.Dx()-7, 36, cursorData)
 		if err != nil {
 			return nil, err
 		}
-	} else {
+	} else if d.State == &StateConversationReader {
 		// Draw the conversation with the most recent message at the bottom of the screen.
-		for i := 0; i < len(d.CurrentConversation.Messages); i++ {
-			if d.CurrentConversation.Messages[i].Index == d.CurrentConversation.HighlightedMessage.Index {
-				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
-					drawText(img, 0, 43, "> "+d.CurrentConversation.Messages[i].Text)
+		for i := 0; i < len(d.Conversations[d.CurrentConversationIndex].Messages); i++ {
+			if i == d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex {
+				if d.Conversations[d.CurrentConversationIndex].Messages[i].Person != d.SelfIdentity {
+					drawText(img, 0, 43, "> "+d.Conversations[d.CurrentConversationIndex].Messages[i].Text)
 				} else {
-					drawText(img, dimensions.Dx()-((len(d.CurrentConversation.Messages[i].Text)+2)*7), 43, d.CurrentConversation.Messages[i].Text+" <")
+					drawText(img, dimensions.Dx()-((len(d.Conversations[d.CurrentConversationIndex].Messages[i].Text)+2)*7), 43, d.Conversations[d.CurrentConversationIndex].Messages[i].Text+" <")
 				}
-			} else if d.CurrentConversation.Messages[i].Index < d.CurrentConversation.HighlightedMessage.Index {
-				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
-					drawText(img, 0, 43-(d.CurrentConversation.HighlightedMessage.Index-d.CurrentConversation.Messages[i].Index)*12, "> "+d.CurrentConversation.Messages[i].Text)
+			} else if i < d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex {
+				if d.Conversations[d.CurrentConversationIndex].Messages[i].Person != d.SelfIdentity {
+					drawText(img, 0, 43-(d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex-i)*12, "> "+d.Conversations[d.CurrentConversationIndex].Messages[i].Text)
 				} else {
-					drawText(img, dimensions.Dx()-((len(d.CurrentConversation.Messages[i].Text)+2)*7), 43-(d.CurrentConversation.HighlightedMessage.Index-d.CurrentConversation.Messages[i].Index)*12, d.CurrentConversation.Messages[i].Text+" <")
+					drawText(img, dimensions.Dx()-((len(d.Conversations[d.CurrentConversationIndex].Messages[i].Text)+2)*7), 43-(d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex-i)*12, d.Conversations[d.CurrentConversationIndex].Messages[i].Text+" <")
 				}
-			} else if d.CurrentConversation.Messages[i].Index > d.CurrentConversation.HighlightedMessage.Index {
-				if d.CurrentConversation.Messages[i].Person != *d.SelfIdentity {
-					drawText(img, 0, 43+(d.CurrentConversation.Messages[i].Index-d.CurrentConversation.HighlightedMessage.Index)*12, "> "+d.CurrentConversation.Messages[i].Text)
+			} else if i > d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex {
+				if d.Conversations[d.CurrentConversationIndex].Messages[i].Person != d.SelfIdentity {
+					drawText(img, 0, 43+(i-d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex)*12, "> "+d.Conversations[d.CurrentConversationIndex].Messages[i].Text)
 				} else {
-					drawText(img, dimensions.Dx()-((len(d.CurrentConversation.Messages[i].Text)+2)*7), 43+(d.CurrentConversation.Messages[i].Index-d.CurrentConversation.HighlightedMessage.Index)*12, d.CurrentConversation.Messages[i].Text+" <")
+					drawText(img, dimensions.Dx()-((len(d.Conversations[d.CurrentConversationIndex].Messages[i].Text)+2)*7), 43+(i-d.Conversations[d.CurrentConversationIndex].HighlightedMessageIndex)*12, d.Conversations[d.CurrentConversationIndex].Messages[i].Text+" <")
 				}
 			}
 		}
 		drawBlackFilledBox(img, 0, 0, dimensions.Dx(), 16)
-		drawText(img, 0, 13, d.CurrentConversation.Name)
+		drawText(img, 0, 13, d.Conversations[d.CurrentConversationIndex].Name)
 		drawHLine(img, 0, 15, dimensions.Dx())
 		drawBlackFilledBox(img, 0, ((dimensions.Dy()*75)/100)-1, dimensions.Dx(), dimensions.Dy())
 		drawHLine(img, 0, (dimensions.Dy()*75)/100, dimensions.Dx())
-		drawText(img, 0, (dimensions.Dy()*75)/100+13, d.CurrentConversation.KeyboardBuffer+d.KeyboardCurrentButton.Characters[d.KeyboardCurrentButton.CurrentCharacterIndex])
+		drawText(img, 0, (dimensions.Dy()*75)/100+13, d.Conversations[d.CurrentConversationIndex].KeyboardBuffer+d.CurrentKeyboardButton.Characters[d.CurrentKeyboardButton.CurrentCharacterIndex])
 	}
 
 	return img, nil

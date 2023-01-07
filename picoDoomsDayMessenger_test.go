@@ -32,8 +32,8 @@ func TestDefaults(t *testing.T) {
 	}
 
 	// Test the default keyboard button
-	if device.KeyboardCurrentButton != KeyboardButton0 {
-		t.Errorf("The default keyboard button should be KeyboardCurrentButton but is %v", device.KeyboardCurrentButton)
+	if device.CurrentKeyboardButton != KeyboardButton0 {
+		t.Errorf("The default keyboard button should be KeyboardCurrentButton but is %v", device.CurrentKeyboardButton)
 	}
 
 	// Test the default radiosend function
@@ -101,10 +101,10 @@ func TestChangeStateWithHistory(t *testing.T) {
 	errTest := errors.New("test error")
 
 	testState0 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	testState1 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 		LoadAction: func(d *Device) (err error) {
 			return errTest
 		},
@@ -131,10 +131,10 @@ func TestChangeStateWithoutHistory(t *testing.T) {
 		t.Errorf("The error should be nil but is %v", err)
 	}
 	testState0 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	testState1 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	device.State = &testState0
 
@@ -158,10 +158,10 @@ func TestGoBackState(t *testing.T) {
 		t.Errorf("The error should be nil but is %v", err)
 	}
 	testState0 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	testState1 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	device.StateHistory = []*State{&testState0, &testState1}
 	device.State = &testState1
@@ -190,11 +190,11 @@ func TestProcessInputEventUp(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	menuItem0 := MenuItem{Text: "test0", Index: 0}
-	menuItem1 := MenuItem{Text: "test1", Index: 1}
+	menuItem0 := MenuItem{Text: "test0"}
+	menuItem1 := MenuItem{Text: "test1"}
 	testState0 := State{
-		Content:         []MenuItem{menuItem0, menuItem1},
-		HighlightedItem: &menuItem1,
+		Content:              []MenuItem{menuItem0, menuItem1},
+		HighlightedItemIndex: 1,
 	}
 	device.State = &testState0
 
@@ -202,37 +202,37 @@ func TestProcessInputEventUp(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	if device.State.HighlightedItem.Text != "test0" {
-		t.Errorf("The highlighted item should be menuItem0 but is %v", device.State.HighlightedItem)
+	if device.State.Content[device.State.HighlightedItemIndex].Text != "test0" {
+		t.Errorf("The highlighted item should be menuItem0 but is %v", device.State.Content[device.State.HighlightedItemIndex].Text)
 	}
 
-	device.State.HighlightedItem = &menuItem0
+	device.State.Content[device.State.HighlightedItemIndex] = menuItem0
 	err = device.ProcessInputEvent(InputEventUp)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	if device.State.HighlightedItem.Text != "test1" {
-		t.Errorf("The highlighted item should be menuItem1 but is %v", device.State.HighlightedItem)
+	if device.State.Content[device.State.HighlightedItemIndex].Text != "test1" {
+		t.Errorf("The highlighted item should be menuItem1 but is %v", device.State.Content[device.State.HighlightedItemIndex])
 	}
 
 	device.State = &StateConversationReader
-	device.Conversations = []*Conversation{{Messages: []Message{{Text: "test0", Index: 0}, {Text: "test1", Index: 1}}}}
-	device.CurrentConversation = device.Conversations[0]
-	device.CurrentConversation.HighlightedMessage = &device.CurrentConversation.Messages[1]
+	device.Conversations = []*Conversation{{Messages: []Message{{Text: "test0"}, {Text: "test1"}}}}
+	device.CurrentConversationIndex = 0
+	device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex = 1
 	err = device.ProcessInputEvent(InputEventUp)
 	if err != nil {
 		t.Errorf("The error should be nil but is %s", err)
 	}
-	if device.CurrentConversation.HighlightedMessage.Text != "test0" {
-		t.Errorf("The highlighted message should be test0 but is %v", device.CurrentConversation.HighlightedMessage.Text)
+	if device.Conversations[device.CurrentConversationIndex].Messages[device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex].Text != "test0" {
+		t.Errorf("The highlighted message should be test0 but is %v", device.Conversations[device.CurrentConversationIndex].Messages[device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex].Text)
 	}
-	device.CurrentConversation.HighlightedMessage = &device.CurrentConversation.Messages[0]
+	device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex = 0
 	err = device.ProcessInputEvent(InputEventUp)
 	if err != nil {
 		t.Errorf("The error should be nil but is %s", err)
 	}
-	if device.CurrentConversation.HighlightedMessage.Text != "test1" {
-		t.Errorf("The highlighted message should be test1 but is %v", device.CurrentConversation.HighlightedMessage.Text)
+	if device.Conversations[device.CurrentConversationIndex].Messages[device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex].Text != "test1" {
+		t.Errorf("The highlighted message should be test1 but is %v", device.Conversations[device.CurrentConversationIndex].Messages[device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex].Text)
 	}
 }
 
@@ -242,11 +242,11 @@ func TestProcessInputEventDown(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	menuItem0 := MenuItem{Text: "test0", Index: 0}
-	menuItem1 := MenuItem{Text: "test1", Index: 1}
+	menuItem0 := MenuItem{Text: "test0"}
+	menuItem1 := MenuItem{Text: "test1"}
 	testState0 := State{
-		Content:         []MenuItem{menuItem0, menuItem1},
-		HighlightedItem: &menuItem0,
+		Content:              []MenuItem{menuItem0, menuItem1},
+		HighlightedItemIndex: 0,
 	}
 	device.State = &testState0
 
@@ -254,37 +254,37 @@ func TestProcessInputEventDown(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	if device.State.HighlightedItem.Text != "test1" {
-		t.Errorf("The highlighted item should be menuItem1 but is %v", device.State.HighlightedItem)
+	if device.State.Content[device.State.HighlightedItemIndex].Text != "test1" {
+		t.Errorf("The highlighted item should be menuItem1 but is %v", device.State.Content[device.State.HighlightedItemIndex])
 	}
 
-	device.State.HighlightedItem = &menuItem1
+	device.State.HighlightedItemIndex = 1
 	err = device.ProcessInputEvent(InputEventDown)
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	if device.State.HighlightedItem.Text != "test0" {
-		t.Errorf("The highlighted item should be menuItem0 but is %v", device.State.HighlightedItem)
+	if device.State.Content[device.State.HighlightedItemIndex].Text != "test0" {
+		t.Errorf("The highlighted item should be menuItem0 but is %v", device.State.Content[device.State.HighlightedItemIndex])
 	}
 
 	device.State = &StateConversationReader
-	device.Conversations = []*Conversation{{Messages: []Message{{Text: "test0", Index: 0}, {Text: "test1", Index: 1}}}}
-	device.CurrentConversation = device.Conversations[0]
-	device.CurrentConversation.HighlightedMessage = &device.CurrentConversation.Messages[0]
+	device.Conversations = []*Conversation{{Messages: []Message{{Text: "test0"}, {Text: "test1"}}}}
+	device.CurrentConversationIndex = 0
+	device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex = 0
 	err = device.ProcessInputEvent(InputEventDown)
 	if err != nil {
 		t.Errorf("The error should be nil but is %s", err)
 	}
-	if device.CurrentConversation.HighlightedMessage.Text != "test1" {
-		t.Errorf("The highlighted message should be test1 but is %v", device.CurrentConversation.HighlightedMessage.Text)
+	if device.Conversations[device.CurrentConversationIndex].Messages[device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex].Text != "test1" {
+		t.Errorf("The highlighted message should be test1 but is %v", device.Conversations[device.CurrentConversationIndex].Messages[device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex].Text)
 	}
-	device.CurrentConversation.HighlightedMessage = &device.CurrentConversation.Messages[1]
+	device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex = 1
 	err = device.ProcessInputEvent(InputEventDown)
 	if err != nil {
 		t.Errorf("The error should be nil but is %s", err)
 	}
-	if device.CurrentConversation.HighlightedMessage.Text != "test0" {
-		t.Errorf("The highlighted message should be test0 but is %v", device.CurrentConversation.HighlightedMessage.Text)
+	if device.Conversations[device.CurrentConversationIndex].Messages[device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex].Text != "test0" {
+		t.Errorf("The highlighted message should be test0 but is %v", device.Conversations[device.CurrentConversationIndex].Messages[device.Conversations[device.CurrentConversationIndex].HighlightedMessageIndex].Text)
 	}
 }
 
@@ -297,12 +297,12 @@ func TestProcessInputEventAccept(t *testing.T) {
 
 	errTest := errors.New("test error")
 
-	menuItem0 := MenuItem{Text: "test0", Index: 0, Action: func(d *Device) (err error) {
+	menuItem0 := MenuItem{Text: "test0", Action: func(d *Device) (err error) {
 		return errTest
 	}}
 	testState0 := State{
-		Content:         []MenuItem{menuItem0},
-		HighlightedItem: &menuItem0,
+		Content:              []MenuItem{menuItem0},
+		HighlightedItemIndex: 0,
 	}
 	device.State = &testState0
 
@@ -319,7 +319,7 @@ func TestProcessInputEventOpenSettings(t *testing.T) {
 		t.Errorf("The error should be nil but is %v", err)
 	}
 	testState0 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	device.State = &testState0
 
@@ -339,7 +339,7 @@ func TestProcessInputEventOpenPeople(t *testing.T) {
 		t.Errorf("The error should be nil but is %v", err)
 	}
 	testState0 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	device.State = &testState0
 
@@ -359,7 +359,7 @@ func TestProcessInputEventOpenMessages(t *testing.T) {
 		t.Errorf("The error should be nil but is %v", err)
 	}
 	testState0 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	device.State = &testState0
 
@@ -379,7 +379,7 @@ func TestProcessInputEventOpenMainMenu(t *testing.T) {
 		t.Errorf("The error should be nil but is %v", err)
 	}
 	testState0 := State{
-		HighlightedItem: &MenuItemDefault,
+		HighlightedItemIndex: 0,
 	}
 	device.State = &testState0
 
@@ -481,8 +481,8 @@ func TestNewConversation(t *testing.T) {
 	if device.Conversations[0] != newConversation {
 		t.Errorf("The returned conversation is not equal to the one contained in the device's conversation list, have: %v want: %v", newConversation, device.Conversations[0])
 	}
-	if newConversation.People[0] != *device.SelfIdentity {
-		t.Errorf("The first conversation person is not equal to the SelfIdentity, have: %v want: %v", newConversation.People[0], *device.SelfIdentity)
+	if newConversation.People[0] != device.SelfIdentity {
+		t.Errorf("The first conversation person is not equal to the SelfIdentity, have: %v want: %v", newConversation.People[0], device.SelfIdentity)
 	}
 	if newConversation.People[1] != conversationPerson {
 		t.Errorf("The second conversation person is not equal to the one passed to the function, have: %v want: %v", newConversation.People[1], conversationPerson)
@@ -500,18 +500,18 @@ func TestUpdateConversationsMenu(t *testing.T) {
 	testConversation3 := &Conversation{Name: "Test3"}
 	device.Conversations = []*Conversation{testConversation1, testConversation2}
 	device.UpdateConversationsMenu()
-	if StateConversationsMenu.Content[1].Text != "Test1" {
+	if StateConversationsMenu.Content[2].Text != "Test1" {
 		t.Errorf("Content of MessagesMenu item 1 is not correct, have: %v want: %v", StateConversationsMenu.Content[1].Text, "TestPerson1")
 	}
-	if StateConversationsMenu.Content[2].Text != "Test2" {
+	if StateConversationsMenu.Content[3].Text != "Test2" {
 		t.Errorf("Content of MessagesMenu item 2 is not correct, have: %v want: %v", StateConversationsMenu.Content[2].Text, "TestPerson2")
 	}
-	err = StateConversationsMenu.Content[1].Action(device)
+	err = StateConversationsMenu.Content[2].Action(device)
 	if err != nil {
 		t.Errorf("There was an unexpected error testing the Message Action, err: %s", err)
 	}
-	if device.CurrentConversation != testConversation1 {
-		t.Errorf("The CurrentConversation is not the conversation of the ran action, have: %v want: %v", device.CurrentConversation, testConversation1)
+	if device.CurrentConversationIndex != 0 {
+		t.Errorf("The CurrentConversation is not the conversation of the ran action, have: %v want: %v", device.CurrentConversationIndex, testConversation1)
 	}
 	if device.State != &StateConversationReader {
 		t.Errorf("The current State is not the ConversationReader, have %v want: %v", device.State, &StateConversationReader)
@@ -519,20 +519,20 @@ func TestUpdateConversationsMenu(t *testing.T) {
 	if len(device.StateHistory) != 2 {
 		t.Errorf("The length of the StateHistory is not 2, have: %d want: %d", len(device.StateHistory), 2)
 	}
-	err = StateConversationsMenu.Content[2].Action(device)
+	err = StateConversationsMenu.Content[3].Action(device)
 	if err != nil {
 		t.Errorf("There was an unexpected error testing the Message Action, err: %s", err)
 	}
-	if device.CurrentConversation != testConversation2 {
-		t.Errorf("The CurrentConversation is not the conversation of the ran action, have: %v want: %v", device.CurrentConversation, testConversation2)
+	if device.CurrentConversationIndex != 1 {
+		t.Errorf("The CurrentConversation is not the conversation of the ran action, have: %v want: %v", device.CurrentConversationIndex, testConversation2)
 	}
 	if len(device.StateHistory) != 3 {
 		t.Errorf("The length of the StateHistory is not 3, have: %d want: %d", len(device.StateHistory), 3)
 	}
 	device.Conversations = []*Conversation{testConversation3}
 	device.UpdateConversationsMenu()
-	if len(StateConversationsMenu.Content) != 2 {
-		t.Errorf("The length of the StateMessagesMenu Content is not 2, have: %d want: %d", len(StateConversationsMenu.Content), 2)
+	if len(StateConversationsMenu.Content) != 3 {
+		t.Errorf("The length of the StateMessagesMenu Content is not 3, have: %d want: %d", len(StateConversationsMenu.Content), 2)
 	}
 }
 
@@ -542,7 +542,7 @@ func TestMessageBytesConversion(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	bytes, err := device.MesageToBytes(Message{Text: "Test", Person: Person{Name: "TestPerson"}})
+	bytes, err := device.MesageToBytes(Message{Text: "testahjk2h98173", Person: Person{Name: "TestPerson"}})
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
@@ -550,10 +550,22 @@ func TestMessageBytesConversion(t *testing.T) {
 	if err != nil {
 		t.Errorf("The error should be nil but is %v", err)
 	}
-	if message.Text != "Test" {
-		t.Errorf("The message text is not correct, have: %v want: %v", message.Text, "Test")
+	if message.Text != "testahjk2h98173" {
+		t.Errorf("The message text is not correct, have: %v want: %v", message.Text, "testahjk2h98173")
 	}
 	if message.Person.Name != "TestPerson" {
 		t.Errorf("The message person is not correct, have: %v want: %v", message.Person.Name, "TestPerson")
+	}
+	bytes2, err := device.MesageToBytes(Message{Text: "testahjk2h98173", Person: Person{Name: "TestPerson"}})
+	if err != nil {
+		t.Errorf("The error should be nil but is %v", err)
+	}
+	// Change the first bytes to remove the prefix and make the message invalid
+	for i := 0; i < 4; i++ {
+		bytes2[0] = 0
+	}
+	_, err = device.BytesToMessage(bytes2)
+	if err != ErrInvalidMessage {
+		t.Errorf("The error should be ErrInvalidMessage but is %v", err)
 	}
 }

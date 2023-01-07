@@ -15,8 +15,9 @@ import (
 )
 
 func main() {
+	time.Sleep(2 * time.Second) // Wait for the USB serial to be ready.
 	// Setup an LED so that if there is an error, we know about it.
-	led := machine.GPIO24
+	led := machine.LED
 	led.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	led.Low()
 
@@ -40,12 +41,12 @@ func main() {
 	// Create a new Machine
 	device, err := picodoomsdaymessenger.NewDevice()
 	if err != nil {
-		handleError(&display, &led, nil, err)
+		handleError(&display, &led, device, err)
 	}
 
 	// Set the old machine state and old menu item to something that is not the starting value.
 	oldDeviceState := picodoomsdaymessenger.StateDefault
-	oldDeviceHighlightedItem := &picodoomsdaymessenger.MenuItemDefault
+	oldDeviceHighlightedItemIndex := 0
 
 	// Set up panic recovery
 	defer func() {
@@ -88,32 +89,51 @@ func main() {
 
 	// Setup the RFM9x radio.
 	rfm := tinygorfm9x.RFM9x{
-		SpiDevice: *machine.SPI1,
+		SPIDevice: *machine.SPI1,
 	}
 	err = rfm.Init(tinygorfm9x.Options{
-		FrequencyMhz:      868,
+		FrequencyMHz:      868,
 		ResetPin:          machine.LORA_RESET,
 		CSPin:             machine.LORA_CS,
-		Dio0Pin:           machine.LORA_DIO0,
-		Dio1Pin:           machine.LORA_DIO1,
-		Dio2Pin:           machine.LORA_DIO2,
-		EnableCrcChecking: true,
+		DIO0Pin:           machine.LORA_DIO0,
+		DIO1Pin:           machine.LORA_DIO1,
+		DIO2Pin:           machine.LORA_DIO2,
+		EnableCRCChecking: true,
 	})
 	if err != nil {
-		handleError(&display, &led, nil, err)
+		handleError(&display, &led, device, err)
+	}
+
+	err = rfm.StartReceive()
+	if err != nil {
+		handleError(&display, &led, device, err)
 	}
 
 	rfm.OnReceivedPacket = func(packet tinygorfm9x.Packet) {
 		err = device.ReceiveFromRadio(packet.Payload)
 		if err != nil {
-			handleError(&display, &led, nil, err)
+			handleError(&display, &led, device, err)
 		}
 	}
 
 	device.SendUsingRadio = func(packet []byte) (err error) {
+		println("Sending packet: " + string(packet))
 		err = rfm.Send(packet)
+		if err != nil {
+			return err
+		}
+		println("Done packet: " + string(packet))
 		return err
 	}
+
+	c := device.NewConversation(picodoomsdaymessenger.PersonYou)
+	c.Messages = append(c.Messages, picodoomsdaymessenger.Message{
+		Person: picodoomsdaymessenger.PersonYou,
+		Text:   "Hello, world!",
+	})
+	c.Name = "New Message"
+	c.HighlightedMessageIndex = 0
+	device.UpdateConversationsMenu()
 
 	// Setup input reading. The columns are read and the rows are pulsed.
 	buttonsCol1 := machine.D9
@@ -150,11 +170,6 @@ func main() {
 		{picodoomsdaymessenger.InputEventNumber7, picodoomsdaymessenger.InputEventNumber8, picodoomsdaymessenger.InputEventNumber9, picodoomsdaymessenger.InputEventFunction3, picodoomsdaymessenger.InputEventLeft},
 		{picodoomsdaymessenger.InputEventStar, picodoomsdaymessenger.InputEventNumber0, picodoomsdaymessenger.InputEventPound, picodoomsdaymessenger.InputEventFunction4, picodoomsdaymessenger.InputEventRight},
 		{picodoomsdaymessenger.InputEventOpenMainMenu, picodoomsdaymessenger.InputEventOpenConversations, picodoomsdaymessenger.InputEventOpenPeople, picodoomsdaymessenger.InputEventOpenSettings, picodoomsdaymessenger.InputEventAccept},
-	}
-
-	err = rfm.StartRecieve()
-	if err != nil {
-		handleError(&display, &led, device, err)
 	}
 
 	// Main program loop.
@@ -219,9 +234,9 @@ func main() {
 		}
 
 		// Update the display if the state has changed.
-		if !reflect.DeepEqual(oldDeviceState, device.State) || !reflect.DeepEqual(oldDeviceHighlightedItem, device.State.HighlightedItem) {
+		if !reflect.DeepEqual(oldDeviceState, device.State) || !(oldDeviceHighlightedItemIndex == device.State.HighlightedItemIndex) {
 			oldDeviceState = *device.State
-			oldDeviceHighlightedItem = device.State.HighlightedItem
+			oldDeviceHighlightedItemIndex = device.State.HighlightedItemIndex
 			frame, err := picodoomsdaymessenger.GetFrame(image.Rect(0, 0, int(displayx), int(displayy)), device)
 			if err != nil {
 				handleError(&display, &led, device, err)
