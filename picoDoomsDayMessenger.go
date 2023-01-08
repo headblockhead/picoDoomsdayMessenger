@@ -800,19 +800,17 @@ func (d *Device) ProcessInputEventAccept() (err error) {
 	if d.State != &StateConversationReader {
 		err = d.State.Content[d.State.HighlightedItemIndex].Action(d)
 		return err
-	} else {
-		// return ErrConversationReaderAcceptDisallowed
-		packetToSend, err := d.MesageToBytes(Message{
-			Text:   d.Conversations[d.CurrentConversationIndex].KeyboardBuffer + d.CurrentKeyboardButton.Characters[d.CurrentKeyboardButton.CurrentCharacterIndex],
-			Person: d.SelfIdentity,
-		})
-		if err != nil {
-			return err
-		}
-		d.Conversations[d.CurrentConversationIndex].KeyboardBuffer = ""
-		d.CurrentKeyboardButton = &KeyboardButton{Characters: []string{""}, CurrentCharacterIndex: 0}
-		return d.SendUsingRadio(packetToSend)
 	}
+	packetToSend, err := d.MesageToBytes(Message{
+		Text:   d.Conversations[d.CurrentConversationIndex].KeyboardBuffer + d.CurrentKeyboardButton.Characters[d.CurrentKeyboardButton.CurrentCharacterIndex],
+		Person: d.SelfIdentity,
+	})
+	if err != nil {
+		return err
+	}
+	d.Conversations[d.CurrentConversationIndex].KeyboardBuffer = ""
+	d.CurrentKeyboardButton = &KeyboardButton{Characters: []string{""}, CurrentCharacterIndex: 0}
+	return d.SendUsingRadio(packetToSend)
 }
 
 func (d *Device) ProcessConversationInputEventNumber1() (err error) {
